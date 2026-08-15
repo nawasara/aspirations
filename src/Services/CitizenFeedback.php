@@ -9,6 +9,8 @@ use Nawasara\Aspirations\Models\Response;
 use Nawasara\Aspirations\Models\Support;
 use Nawasara\Aspirations\Support\Settings;
 
+use function app;
+
 /**
  * Penilaian warga & dukungan "Saya Juga Mengalami".
  *
@@ -85,7 +87,16 @@ class CitizenFeedback
                 'is_internal' => false,
             ]);
 
-            return $report->refresh();
+            $report->refresh();
+
+            if ($dibukaKembali) {
+                // Diberitahukan supaya OPD tahu ada pekerjaan yang kembali —
+                // laporan yang dibuka kembali diam-diam akan terlewat di
+                // antrean yang sudah dianggap selesai.
+                app(ReportNotifier::class)->reopened($report);
+            }
+
+            return $report;
         });
     }
 

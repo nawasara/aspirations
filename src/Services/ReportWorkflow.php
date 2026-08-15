@@ -68,6 +68,7 @@ class ReportWorkflow
 
     public function __construct(
         protected MembershipResolver $memberships,
+        protected ReportNotifier $notifier,
     ) {}
 
     /**
@@ -241,7 +242,18 @@ class ReportWorkflow
                 'is_internal' => false,
             ]);
 
-            return $report->refresh();
+            $report->refresh();
+
+            // SETELAH tersimpan, di dalam transaksi yang sama. Kalau dikirim
+            // sebelum save(), warga bisa menerima kabar untuk perubahan yang
+            // ternyata gagal — dan kabar yang salah lebih buruk daripada
+            // tidak ada kabar.
+            //
+            // Kegagalan kirim tidak menggagalkan transaksi; ReportNotifier
+            // menelan galatnya sendiri.
+            $this->notifier->statusChanged($report, $to);
+
+            return $report;
         });
     }
 

@@ -33,6 +33,8 @@
         "illuminate/support": "^10.0|^12.0",
         "spatie/laravel-permission": "^6.0",
         "nawasara/api": "*",
+        "nawasara/citizen": "*",
+        "nawasara/notification": "*",
         "nawasara/registry": "*",
         "nawasara/ui": "*",
         "livewire/livewire": "^3.0"
