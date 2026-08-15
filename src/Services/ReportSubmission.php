@@ -8,6 +8,7 @@ use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Models\Category;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Support\ReportCode;
+use Nawasara\Aspirations\Jobs\GeocodeReportJob;
 use Nawasara\Aspirations\Support\Settings;
 
 /**
@@ -81,6 +82,15 @@ class ReportSubmission
             $this->dispatchAndStampSla($report, $category, $receivedAt);
 
             $report->save();
+
+            // Diantre SETELAH commit, bukan dijalankan inline. Google yang
+            // lambat atau mati tidak boleh menggagalkan laporan yang sudah
+            // telanjur diterima — warga sudah berdiri di lokasi dengan sinyal
+            // seadanya, dan kegagalan di titik itu berarti mereka mengulang
+            // dari awal.
+            if ($report->latitude !== null && $report->longitude !== null) {
+                GeocodeReportJob::dispatch($report->id)->afterCommit();
+            }
 
             return $report;
         });

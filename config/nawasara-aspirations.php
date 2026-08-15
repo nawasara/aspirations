@@ -243,6 +243,29 @@ return [
         'reopen_threshold' => (int) env('ASPIRATIONS_REOPEN_THRESHOLD', 2),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Geocoding
+    |--------------------------------------------------------------------------
+    |
+    | Bawaannya `null` — sistem berjalan penuh TANPA kunci Google. Laporan
+    | tetap masuk dan tetap ditangani; hanya kolom wilayah yang kosong.
+    |
+    | Dibuat begitu dengan sengaja: sistem yang menuntut kunci pihak ketiga
+    | untuk sekadar menerima laporan warga akan mati begitu tagihan telat
+    | dibayar atau kuota habis.
+    |
+    | Setel ke 'google' dan isi kuncinya bila sudah tersedia.
+    */
+    'geocoding' => [
+        'provider' => env('ASPIRATIONS_GEOCODER', 'null'),
+
+        // ⚠️ Kunci ini TIDAK PERNAH boleh sampai ke aplikasi ponsel. Kunci
+        // yang tertanam di APK dapat dibongkar dan dipakai orang lain atas
+        // tagihan Pemkab — itulah sebabnya geocoding dikerjakan di server.
+        'google_key' => env('ASPIRATIONS_GOOGLE_MAPS_KEY', ''),
+    ],
+
     'scheduler' => [
         'enabled' => env('ASPIRATIONS_SCHEDULER_ENABLED', true),
     ],

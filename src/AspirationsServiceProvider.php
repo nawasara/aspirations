@@ -3,18 +3,40 @@
 namespace Nawasara\Aspirations;
 
 use Illuminate\Support\ServiceProvider;
+use Nawasara\Aspirations\Contracts\GeocodingProvider;
 use Nawasara\Aspirations\Jobs\AutoCloseJob;
 use Nawasara\Aspirations\Jobs\CheckSlaJob;
 use Nawasara\Aspirations\Jobs\CheckVerificationDueJob;
+use Nawasara\Aspirations\Services\Geocoding\GoogleGeocoder;
+use Nawasara\Aspirations\Services\Geocoding\NullGeocoder;
 
 class AspirationsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->registerGeocoder();
+
         $this->mergeConfigFrom(
             __DIR__.'/../config/nawasara-aspirations.php',
             'nawasara-aspirations'
         );
+    }
+
+    /**
+     * Penyedia geocoding, dipilih dari config.
+     *
+     * Bawaannya NullGeocoder — sistem berjalan penuh tanpa kunci Google.
+     * Menukar penyedia (Nominatim, layanan dalam negeri) cukup menambah satu
+     * cabang di sini; GeocodeReportJob tidak berubah sama sekali.
+     */
+    protected function registerGeocoder(): void
+    {
+        $this->app->bind(GeocodingProvider::class, function () {
+            return match (config('nawasara-aspirations.geocoding.provider', 'null')) {
+                'google' => new GoogleGeocoder,
+                default => new NullGeocoder,
+            };
+        });
     }
 
     public function boot(): void
