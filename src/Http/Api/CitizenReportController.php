@@ -86,12 +86,12 @@ class CitizenReportController extends Controller
     {
         $sub = $this->citizenSub($request);
 
-        $maks = Settings::descriptionMax();
+        $max = Settings::descriptionMax();
 
         $data = $request->validate([
             'category_id' => ['required', 'uuid', 'exists:nawasara_aspirations_categories,id'],
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:'.$maks],
+            'description' => ['required', 'string', 'max:'.$max],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'location_accuracy' => ['nullable', 'numeric', 'min:0'],

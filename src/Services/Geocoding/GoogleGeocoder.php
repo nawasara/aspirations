@@ -56,7 +56,7 @@ class GoogleGeocoder implements GeocodingProvider
                 return null;
             }
 
-            return $this->petakan($data['results'][0] ?? []);
+            return $this->mapComponents($data['results'][0] ?? []);
         } catch (\Throwable $e) {
             // Tidak melempar — lihat kontrak GeocodingProvider.
             Log::warning('aspirations: geocoding error', ['error' => $e->getMessage()]);
@@ -76,14 +76,14 @@ class GoogleGeocoder implements GeocodingProvider
      * susunan teksnya berbeda antar-daerah, dan memotong string adalah cara
      * mendapatkan "Jawa Timur" sebagai nama desa.
      */
-    protected function petakan(array $hasil): ?array
+    protected function mapComponents(array $result): ?array
     {
-        if ($hasil === []) {
+        if ($result === []) {
             return null;
         }
 
-        $ambil = function (string $tipe) use ($hasil): ?string {
-            foreach ($hasil['address_components'] ?? [] as $k) {
+        $ambil = function (string $tipe) use ($result): ?string {
+            foreach ($result['address_components'] ?? [] as $k) {
                 if (in_array($tipe, $k['types'] ?? [], true)) {
                     return $k['long_name'] ?? null;
                 }
@@ -93,7 +93,7 @@ class GoogleGeocoder implements GeocodingProvider
         };
 
         return [
-            'full_address' => $hasil['formatted_address'] ?? null,
+            'full_address' => $result['formatted_address'] ?? null,
             'village' => $ambil('administrative_area_level_4'),
             'district' => $ambil('administrative_area_level_3'),
         ];

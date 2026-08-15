@@ -126,18 +126,18 @@ class ReportSubmission
         // parkir liar yang dibiarkan bertahun-tahun memang membuat orang
         // jengkel. Yang ditahan adalah tampilnya di panel OPD, bukan haknya
         // melapor.
-        $saringan = $this->filter->check($report->title, $report->description);
+        $screening = $this->filter->check($report->title, $report->description);
 
-        if ($saringan['flagged']) {
+        if ($screening['flagged']) {
             $report->flagged_at = $receivedAt;
-            $report->flag_reasons = $saringan['reasons'];
+            $report->flag_reasons = $screening['reasons'];
         }
 
         // Ditandai = belum diteruskan ke OPD, tetapi TETAP `submitted` dan
         // TETAP distempel tenggatnya di bawah. Menghentikan jam di sini akan
         // membuat laporan yang menunggu tinjauan tidak pernah terlihat
         // terlambat — dan tinjauan yang terlupakan menjadi tak terdeteksi.
-        $report->status = ($category->opd_id && ! $saringan['flagged'])
+        $report->status = ($category->opd_id && ! $screening['flagged'])
             ? Report::STATUS_DISPATCHED
             : Report::STATUS_SUBMITTED;
 
@@ -166,13 +166,13 @@ class ReportSubmission
         }
 
         $at = $from->copy();
-        $sisa = $hours;
+        $remaining = $hours;
 
-        while ($sisa > 0) {
+        while ($remaining > 0) {
             $at->addHour();
 
             if (! $at->isWeekend()) {
-                $sisa--;
+                $remaining--;
             }
         }
 
@@ -195,11 +195,11 @@ class ReportSubmission
             return;
         }
 
-        $hariIni = Report::where('keycloak_sub', $keycloakSub)
+        $todayCount = Report::where('keycloak_sub', $keycloakSub)
             ->where('created_at', '>=', now()->startOfDay())
             ->count();
 
-        if ($hariIni >= $max) {
+        if ($todayCount >= $max) {
             throw new SubmissionException(
                 "Anda sudah mengirim {$max} laporan hari ini. Silakan lanjutkan besok."
             );

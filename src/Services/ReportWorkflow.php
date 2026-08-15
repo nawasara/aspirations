@@ -120,8 +120,8 @@ class ReportWorkflow
                 // cepat tercatat lambat gara-gara atasannya menunda.
                 $r->resolution_submitted_at = now();
 
-                $jam = Settings::verificationHours();
-                $r->verification_due_at = now()->addHours($jam);
+                $hours = Settings::verificationHours();
+                $r->verification_due_at = now()->addHours($hours);
             }
         );
     }

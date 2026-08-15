@@ -158,26 +158,26 @@ class PhotoUploader
      */
     protected function readExif(UploadedFile $file): array
     {
-        $kosong = ['captured_at' => null, 'lat' => null, 'lng' => null];
+        $empty = ['captured_at' => null, 'lat' => null, 'lng' => null];
 
         if (! function_exists('exif_read_data') || $file->getMimeType() !== 'image/jpeg') {
-            return $kosong;
+            return $empty;
         }
 
         try {
             $data = @exif_read_data($file->getRealPath());
         } catch (\Throwable) {
-            return $kosong;
+            return $empty;
         }
 
         if (! is_array($data)) {
-            return $kosong;
+            return $empty;
         }
 
-        $waktu = $data['DateTimeOriginal'] ?? $data['DateTime'] ?? null;
+        $takenAt = $data['DateTimeOriginal'] ?? $data['DateTime'] ?? null;
 
         return [
-            'captured_at' => $waktu ? $this->parseExifTime($waktu) : null,
+            'captured_at' => $takenAt ? $this->parseExifTime($takenAt) : null,
             'lat' => $this->gpsToDecimal($data, 'GPSLatitude', 'GPSLatitudeRef'),
             'lng' => $this->gpsToDecimal($data, 'GPSLongitude', 'GPSLongitudeRef'),
         ];
@@ -200,7 +200,7 @@ class PhotoUploader
             return null;
         }
 
-        $bagi = function ($pecahan) {
+        $divide = function ($pecahan) {
             if (! str_contains((string) $pecahan, '/')) {
                 return (float) $pecahan;
             }
@@ -210,16 +210,16 @@ class PhotoUploader
             return (float) $bawah === 0.0 ? 0.0 : (float) $atas / (float) $bawah;
         };
 
-        $derajat = $bagi($exif[$key][0] ?? 0);
-        $menit = $bagi($exif[$key][1] ?? 0);
-        $detik = $bagi($exif[$key][2] ?? 0);
+        $degrees = $divide($exif[$key][0] ?? 0);
+        $minutes = $divide($exif[$key][1] ?? 0);
+        $seconds = $divide($exif[$key][2] ?? 0);
 
-        $nilai = $derajat + ($menit / 60) + ($detik / 3600);
+        $value = $degrees + ($minutes / 60) + ($seconds / 3600);
 
         // S dan W bernilai negatif — Ponorogo ada di lintang selatan, jadi
         // melewatkan ini akan menempatkan setiap laporan di belahan bumi utara.
         $ref = strtoupper((string) ($exif[$refKey] ?? ''));
 
-        return in_array($ref, ['S', 'W'], true) ? -$nilai : $nilai;
+        return in_array($ref, ['S', 'W'], true) ? -$value : $value;
     }
 }

@@ -35,9 +35,9 @@ class AutoCloseJob implements ShouldQueue
 
     public function handle(): void
     {
-        $hari = Settings::autoCloseDays();
-        $batas = now()->subDays($hari);
-        $ditutup = 0;
+        $days = Settings::autoCloseDays();
+        $batas = now()->subDays($days);
+        $closed = 0;
 
         Report::withoutGlobalScopes()
             ->where('status', Report::STATUS_RESOLVED)
@@ -48,16 +48,16 @@ class AutoCloseJob implements ShouldQueue
             // membedakan laporan yang menunggu nilai dari yang memang sudah
             // tuntas tanpa nilai.
             ->whereNull('rated_closed_at')
-            ->chunkById(200, function ($reports) use (&$ditutup) {
+            ->chunkById(200, function ($reports) use (&$closed) {
                 foreach ($reports as $report) {
                     $report->rated_closed_at = now();
                     $report->save();
-                    $ditutup++;
+                    $closed++;
                 }
             });
 
-        if ($ditutup > 0) {
-            Log::info('aspirations: laporan ditutup tanpa penilaian', ['jumlah' => $ditutup]);
+        if ($closed > 0) {
+            Log::info('aspirations: laporan ditutup tanpa penilaian', ['count' => $closed]);
         }
     }
 }

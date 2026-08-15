@@ -55,10 +55,10 @@ class CitizenFeedback
         return DB::transaction(function () use ($report, $rating, $comment) {
             $report->rating = $rating;
 
-            $ambang = Settings::reopenThreshold();
-            $dibukaKembali = $rating <= $ambang;
+            $threshold = Settings::reopenThreshold();
+            $wasReopened = $rating <= $threshold;
 
-            if ($dibukaKembali) {
+            if ($wasReopened) {
                 // Kembali ke in_progress, BUKAN ke dispatched: OPD-nya sudah
                 // benar dan sudah pernah mengerjakannya. Mengulang dari awal
                 // hanya menambah satu putaran administrasi tanpa manfaat.
@@ -83,13 +83,13 @@ class CitizenFeedback
                 'user_id' => null,   // warga, bukan petugas
                 'status_from' => Report::STATUS_RESOLVED,
                 'status_to' => $report->status,
-                'body' => $this->ratingBody($rating, $comment, $dibukaKembali),
+                'body' => $this->ratingTimelineBody($rating, $comment, $wasReopened),
                 'is_internal' => false,
             ]);
 
             $report->refresh();
 
-            if ($dibukaKembali) {
+            if ($wasReopened) {
                 // Diberitahukan supaya OPD tahu ada pekerjaan yang kembali —
                 // laporan yang dibuka kembali diam-diam akan terlewat di
                 // antrean yang sudah dianggap selesai.
@@ -121,12 +121,12 @@ class CitizenFeedback
             // firstOrCreate + unique index di basis data: pemeriksaan di PHP
             // saja bisa lolos bila dua permintaan datang bersamaan, dan
             // hitungannya menjadi salah tanpa ada yang menyadari.
-            $baru = Support::firstOrCreate([
+            $created = Support::firstOrCreate([
                 'report_id' => $report->id,
                 'keycloak_sub' => $keycloakSub,
             ]);
 
-            if ($baru->wasRecentlyCreated) {
+            if ($created->wasRecentlyCreated) {
                 // increment() langsung di basis data, bukan baca-lalu-tulis —
                 // dua dukungan bersamaan akan saling menimpa bila dihitung di
                 // PHP.
@@ -141,11 +141,11 @@ class CitizenFeedback
     public function unsupport(Report $report, string $keycloakSub): Report
     {
         return DB::transaction(function () use ($report, $keycloakSub) {
-            $terhapus = Support::where('report_id', $report->id)
+            $deleted = Support::where('report_id', $report->id)
                 ->where('keycloak_sub', $keycloakSub)
                 ->delete();
 
-            if ($terhapus > 0 && $report->support_count > 0) {
+            if ($deleted > 0 && $report->support_count > 0) {
                 $report->decrement('support_count');
             }
 
@@ -159,20 +159,20 @@ class CitizenFeedback
      * Ditulis dalam bahasa yang dibaca warga DAN petugas — keduanya melihat
      * linimasa yang sama, jadi tidak boleh berbunyi seperti catatan sistem.
      */
-    protected function ratingBody(int $rating, ?string $comment, bool $dibukaKembali): string
+    protected function ratingTimelineBody(int $rating, ?string $comment, bool $wasReopened): string
     {
-        $bintang = str_repeat('★', $rating).str_repeat('☆', 5 - $rating);
+        $stars = str_repeat('★', $rating).str_repeat('☆', 5 - $rating);
 
-        $teks = "Penilaian warga: {$bintang} ({$rating}/5)";
+        $text = "Penilaian warga: {$stars} ({$rating}/5)";
 
         if ($comment !== null && trim($comment) !== '') {
-            $teks .= "\n".trim($comment);
+            $text .= "\n".trim($comment);
         }
 
-        if ($dibukaKembali) {
-            $teks .= "\n\nLaporan dibuka kembali karena penilaian di bawah batas.";
+        if ($wasReopened) {
+            $text .= "\n\nLaporan dibuka kembali karena penilaian di bawah batas.";
         }
 
-        return $teks;
+        return $text;
     }
 }

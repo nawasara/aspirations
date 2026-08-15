@@ -20,10 +20,10 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        $urutan = 0;
+        $order = 0;
 
         foreach ((array) config('nawasara-aspirations.categories', []) as $data) {
-            $urutan++;
+            $order++;
 
             $opdId = $this->resolveOpd($data['opd_code'] ?? null);
 
@@ -36,12 +36,12 @@ class CategorySeeder extends Seeder
                 );
             }
 
-            $ada = Category::where('code', $data['code'])->first();
+            $existing = Category::where('code', $data['code'])->first();
 
-            if ($ada) {
+            if ($existing) {
                 // Hanya menyegarkan hal yang bukan kebijakan. Lihat catatan
                 // kelas di atas.
-                $ubah = [
+                $changes = [
                     'icon_name' => $data['icon_name'],
                     'color' => $data['color'],
                     'is_sensitive' => $data['is_sensitive'] ?? false,
@@ -61,11 +61,11 @@ class CategorySeeder extends Seeder
                 // sekali; begitu OPD-nya terdaftar di registry, seed berikutnya
                 // menyambungkannya. Yang SUDAH terisi tidak disentuh — bisa
                 // jadi admin sengaja memindahkannya lewat panel.
-                if ($ada->opd_id === null && $opdId !== null) {
-                    $ubah['opd_id'] = $opdId;
+                if ($existing->opd_id === null && $opdId !== null) {
+                    $changes['opd_id'] = $opdId;
                 }
 
-                $ada->update($ubah);
+                $existing->update($changes);
 
                 continue;
             }
@@ -79,7 +79,7 @@ class CategorySeeder extends Seeder
                 'opd_id' => $opdId,
                 'sla_hours' => $data['sla_hours'],
                 'uses_working_days' => false,
-                'sort_order' => $urutan,
+                'sort_order' => $order,
                 'is_active' => true,
                 'is_sensitive' => $data['is_sensitive'] ?? false,
 
@@ -91,11 +91,11 @@ class CategorySeeder extends Seeder
             ]);
         }
 
-        $tanpaOpd = Category::whereNull('opd_id')->count();
+        $withoutOpd = Category::whereNull('opd_id')->count();
 
-        if ($tanpaOpd > 0) {
+        if ($withoutOpd > 0) {
             $this->command?->warn(
-                "  {$tanpaOpd} kategori belum punya OPD — disposisi otomatis (#18) tidak dapat berjalan untuk kategori tersebut."
+                "  {$withoutOpd} kategori belum punya OPD — disposisi otomatis (#18) tidak dapat berjalan untuk kategori tersebut."
             );
         }
     }

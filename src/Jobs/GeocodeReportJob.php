@@ -64,9 +64,9 @@ class GeocodeReportJob implements ShouldQueue
             return;
         }
 
-        $hasil = $geocoder->reverse((float) $report->latitude, (float) $report->longitude);
+        $result = $geocoder->reverse((float) $report->latitude, (float) $report->longitude);
 
-        if ($hasil === null) {
+        if ($result === null) {
             // Penyedia mengembalikan null untuk KEDUA hal: gagal, dan titik
             // yang memang tidak punya alamat. Keduanya diperlakukan sama —
             // tidak ada yang bisa diisi, dan laporan tetap berjalan.
@@ -78,9 +78,9 @@ class GeocodeReportJob implements ShouldQueue
         }
 
         $report->forceFill([
-            'full_address' => $hasil['full_address'] ?? null,
-            'village' => $hasil['village'] ?? null,
-            'district' => $hasil['district'] ?? null,
+            'full_address' => $result['full_address'] ?? null,
+            'village' => $result['village'] ?? null,
+            'district' => $result['district'] ?? null,
         ])->save();
 
         // `village_id` sengaja TIDAK diisi di sini. Master wilayah belum ada

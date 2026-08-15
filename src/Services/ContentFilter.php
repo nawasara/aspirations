@@ -61,32 +61,32 @@ class ContentFilter
      */
     public function check(string ...$texts): array
     {
-        $asli = implode(' ', $texts);
-        $gabung = Str::lower($asli);
+        $raw = implode(' ', $texts);
+        $combined = Str::lower($raw);
 
-        $alasan = [];
-        $kata = [];
+        $reasons = [];
+        $words = [];
 
-        $temuKasar = $this->cari($gabung, self::KASAR);
-        if ($temuKasar !== []) {
-            $alasan[] = 'kata_kasar';
-            $kata = array_merge($kata, $temuKasar);
+        $profanityHits = $this->matchWords($combined, self::KASAR);
+        if ($profanityHits !== []) {
+            $reasons[] = 'kata_kasar';
+            $words = array_merge($words, $profanityHits);
         }
 
-        $temuSara = $this->cari($gabung, self::SARA);
-        if ($temuSara !== []) {
-            $alasan[] = 'sara';
-            $kata = array_merge($kata, $temuSara);
+        $slurHits = $this->matchWords($combined, self::SARA);
+        if ($slurHits !== []) {
+            $reasons[] = 'sara';
+            $words = array_merge($words, $slurHits);
         }
 
-        if ($this->berteriak($asli)) {
-            $alasan[] = 'huruf_kapital_berlebih';
+        if ($this->isShouting($raw)) {
+            $reasons[] = 'huruf_kapital_berlebih';
         }
 
         return [
-            'flagged' => $alasan !== [],
-            'reasons' => $alasan,
-            'terms' => array_values(array_unique($kata)),
+            'flagged' => $reasons !== [],
+            'reasons' => $reasons,
+            'terms' => array_values(array_unique($words)),
         ];
     }
 
@@ -98,17 +98,17 @@ class ContentFilter
      * kata pendek akan cocok di mana-mana. Ini penyebab umum penyaring yang
      * menandai segalanya lalu diabaikan orang.
      */
-    protected function cari(string $teks, array $daftar): array
+    protected function matchWords(string $text, array $list): array
     {
-        $temu = [];
+        $found = [];
 
-        foreach ($daftar as $kata) {
-            if (preg_match('/\b'.preg_quote($kata, '/').'\b/u', $teks)) {
-                $temu[] = $kata;
+        foreach ($list as $words) {
+            if (preg_match('/\b'.preg_quote($words, '/').'\b/u', $text)) {
+                $found[] = $words;
             }
         }
 
-        return $temu;
+        return $found;
     }
 
     /**
@@ -121,18 +121,18 @@ class ContentFilter
      * Hanya berlaku pada teks yang cukup panjang: judul pendek berhuruf
      * kapital adalah hal biasa dan bukan apa-apa.
      */
-    protected function berteriak(string $asli): bool
+    protected function isShouting(string $raw): bool
     {
-        $huruf = preg_replace('/[^a-zA-Z]/', '', $asli);
+        $letters = preg_replace('/[^a-zA-Z]/', '', $raw);
 
-        if (strlen($huruf) < 30) {
+        if (strlen($letters) < 30) {
             return false;
         }
 
-        $kapital = preg_replace('/[^A-Z]/', '', $huruf);
+        $uppercase = preg_replace('/[^A-Z]/', '', $letters);
 
         // 80%: menyisakan ruang untuk singkatan yang wajar (RT, RW, OPD, PKL)
         // di dalam kalimat yang ditulis normal.
-        return strlen($kapital) / strlen($huruf) > 0.8;
+        return strlen($uppercase) / strlen($letters) > 0.8;
     }
 }

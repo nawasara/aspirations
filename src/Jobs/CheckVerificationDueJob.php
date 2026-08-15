@@ -31,13 +31,13 @@ class CheckVerificationDueJob implements ShouldQueue
 
     public function handle(): void
     {
-        $tereskalasi = 0;
+        $escalated = 0;
 
         Report::withoutGlobalScopes()
             ->where('status', Report::STATUS_AWAITING_VERIFICATION)
             ->whereNotNull('verification_due_at')
             ->where('verification_due_at', '<', now())
-            ->chunkById(200, function ($reports) use (&$tereskalasi) {
+            ->chunkById(200, function ($reports) use (&$escalated) {
                 foreach ($reports as $report) {
                     if ($report->escalation_level >= 1) {
                         continue;
@@ -45,12 +45,12 @@ class CheckVerificationDueJob implements ShouldQueue
 
                     $report->escalation_level = 1;
                     $report->save();
-                    $tereskalasi++;
+                    $escalated++;
                 }
             });
 
-        if ($tereskalasi > 0) {
-            Log::info('aspirations: verifikasi melewati batas', ['tereskalasi' => $tereskalasi]);
+        if ($escalated > 0) {
+            Log::info('aspirations: verifikasi melewati batas', ['escalated' => $escalated]);
         }
     }
 }

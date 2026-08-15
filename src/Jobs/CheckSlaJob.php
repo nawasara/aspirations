@@ -45,7 +45,7 @@ class CheckSlaJob implements ShouldQueue
 
     public function handle(): void
     {
-        $naik = 0;
+        $raised = 0;
 
         // withoutGlobalScopes: job berjalan tanpa pengguna, dan ScopedToOpd
         // akan menjawab 'privileged' — tetapi ditulis eksplisit supaya
@@ -53,20 +53,20 @@ class CheckSlaJob implements ShouldQueue
         // benar.
         Report::withoutGlobalScopes()
             ->overdue()
-            ->chunkById(200, function ($reports) use (&$naik) {
+            ->chunkById(200, function ($reports) use (&$raised) {
                 foreach ($reports as $report) {
                     $target = $this->targetLevel($report);
 
                     if ($target > $report->escalation_level) {
                         $report->escalation_level = $target;
                         $report->save();
-                        $naik++;
+                        $raised++;
                     }
                 }
             });
 
-        if ($naik > 0) {
-            Log::info('aspirations: eskalasi SLA', ['naik' => $naik]);
+        if ($raised > 0) {
+            Log::info('aspirations: eskalasi SLA', ['raised' => $raised]);
         }
     }
 
@@ -79,12 +79,12 @@ class CheckSlaJob implements ShouldQueue
      */
     protected function targetLevel(Report $report): int
     {
-        $lewat = collect([
+        $passedAt = collect([
             $report->isResponseOverdue() ? $report->response_due_at : null,
             $report->isResolutionOverdue() ? $report->sla_due_at : null,
         ])->filter()->min();
 
-        if (! $lewat) {
+        if (! $passedAt) {
             return $report->escalation_level;
         }
 
@@ -93,13 +93,13 @@ class CheckSlaJob implements ShouldQueue
         // sehingga perbandingan `>= ambang` tidak pernah benar dan tidak ada
         // laporan yang tereskalasi — diam-diam, tanpa galat.
         //
-        // Ditulis eksplisit dari `$lewat` ke sekarang supaya arahnya tidak
+        // Ditulis eksplisit dari `$passedAt` ke sekarang supaya arahnya tidak
         // bergantung pada perilaku pustaka yang dapat berubah antarversi.
-        $jamTerlambat = $lewat->diffInHours(now(), false);
+        $hoursLate = $passedAt->diffInHours(now(), false);
         $level = $report->escalation_level;
 
-        foreach (self::ESCALATE_AFTER_HOURS as $tingkat => $ambang) {
-            if ($jamTerlambat >= $ambang) {
+        foreach (self::ESCALATE_AFTER_HOURS as $tingkat => $threshold) {
+            if ($hoursLate >= $threshold) {
                 $level = max($level, $tingkat);
             }
         }

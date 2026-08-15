@@ -31,7 +31,7 @@ class DuplicateDetector
         ?int $excludeId = null,
     ): Collection {
         $radius = Settings::duplicateRadius();
-        $hari = Settings::duplicateDays();
+        $days = Settings::duplicateDays();
 
         // Kotak pembatas dulu, baru jarak sesungguhnya. Tanpa ini setiap
         // pengiriman menghitung jarak ke SELURUH laporan sekategori — mahal,
@@ -43,17 +43,17 @@ class DuplicateDetector
         $deltaLat = $radius / 111320;
         $deltaLng = $radius / (111320 * max(cos(deg2rad($latitude)), 0.01));
 
-        $kandidat = Report::query()
+        $candidates = Report::query()
             ->where('category_id', $categoryId)
             ->whereIn('status', Report::OPEN_STATUSES)
-            ->where('created_at', '>=', now()->subDays($hari))
+            ->where('created_at', '>=', now()->subDays($days))
             ->whereBetween('latitude', [$latitude - $deltaLat, $latitude + $deltaLat])
             ->whereBetween('longitude', [$longitude - $deltaLng, $longitude + $deltaLng])
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->limit(20)
             ->get();
 
-        return $kandidat->filter(function (Report $r) use ($latitude, $longitude, $radius) {
+        return $candidates->filter(function (Report $r) use ($latitude, $longitude, $radius) {
             if ($r->latitude === null || $r->longitude === null) {
                 return false;
             }

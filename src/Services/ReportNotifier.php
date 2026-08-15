@@ -37,7 +37,7 @@ class ReportNotifier
      * sering membuat orang mematikan notifikasi — lalu yang penting pun ikut
      * hilang.
      */
-    protected const DIBERITAHU = [
+    protected const NOTIFIABLE = [
         Report::STATUS_IN_PROGRESS => 'aspirations.report.in_progress',
         Report::STATUS_RESOLVED => 'aspirations.report.resolved',
         Report::STATUS_REJECTED => 'aspirations.report.rejected',
@@ -50,26 +50,26 @@ class ReportNotifier
      * sebelumnya, supaya tidak ada pesan terkirim untuk perubahan yang
      * ternyata gagal.
      */
-    public function statusChanged(Report $report, string $statusBaru): void
+    public function statusChanged(Report $report, string $newStatus): void
     {
-        $template = self::DIBERITAHU[$statusBaru] ?? null;
+        $template = self::NOTIFIABLE[$newStatus] ?? null;
 
         if ($template === null) {
             return;
         }
 
-        $this->kirim($report, $template, [
-            'judul' => $this->judul($statusBaru),
-            'pesan' => $this->pesan($report, $statusBaru),
+        $this->dispatchNotification($report, $template, [
+            'subject' => $this->subjectFor($newStatus),
+            'body' => $this->bodyFor($report, $newStatus),
         ]);
     }
 
     /** Laporan dibuka kembali karena penilaian rendah (#6). */
     public function reopened(Report $report): void
     {
-        $this->kirim($report, 'aspirations.report.reopened', [
-            'judul' => 'Laporan Anda dibuka kembali',
-            'pesan' => "Terima kasih atas penilaian Anda. Laporan {$report->code} kami buka kembali untuk ditangani ulang.",
+        $this->dispatchNotification($report, 'aspirations.report.reopened', [
+            'subject' => 'Laporan Anda dibuka kembali',
+            'body' => "Terima kasih atas penilaian Anda. Laporan {$report->code} kami buka kembali untuk ditangani ulang.",
         ]);
     }
 
@@ -81,10 +81,10 @@ class ReportNotifier
      * `keycloak_sub` tetap tersimpan justru supaya hal seperti ini tetap bisa.
      * Warga yang melapor anonim tetap berhak tahu laporannya ditangani.
      */
-    protected function kirim(Report $report, string $template, array $data): void
+    protected function dispatchNotification(Report $report, string $template, array $data): void
     {
         try {
-            $email = $this->emailPelapor($report);
+            $email = $this->reporterEmail($report);
 
             if ($email === null) {
                 // Bukan galat: warga bisa saja mendaftar lewat Google tanpa
@@ -99,8 +99,8 @@ class ReportNotifier
 
             Notify::to($email)
                 ->channel($this->channels())
-                ->subject($data['judul'])
-                ->body($data['pesan'])
+                ->subject($data['subject'])
+                ->body($data['body'])
                 ->context([
                     'report_code' => $report->code,
                     'status' => $report->status,
@@ -131,13 +131,13 @@ class ReportNotifier
     }
 
     /** Surel pelapor, dari profil warga. */
-    protected function emailPelapor(Report $report): ?string
+    protected function reporterEmail(Report $report): ?string
     {
         return CitizenProfile::where('keycloak_sub', $report->keycloak_sub)
             ->value('email');
     }
 
-    protected function judul(string $status): string
+    protected function subjectFor(string $status): string
     {
         return match ($status) {
             Report::STATUS_IN_PROGRESS => 'Laporan Anda sedang ditangani',
@@ -154,7 +154,7 @@ class ReportNotifier
      * pesan terasa ditujukan kepada orangnya, bukan surat massal. Warga yang
      * mengirim beberapa laporan harus dapat langsung tahu yang mana.
      */
-    protected function pesan(Report $report, string $status): string
+    protected function bodyFor(Report $report, string $status): string
     {
         $opd = $report->opd?->name ?? 'perangkat daerah terkait';
 
