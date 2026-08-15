@@ -1,0 +1,49 @@
+{
+    "name": "nawasara/aspirations",
+    "description": "Citizen complaint and aspiration channel for the Nawasara superapp framework — Lapor Bunda: binding SLA, automatic dispatch by category, in-department verification, and leadership monitoring.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "nawasara",
+        "laravel",
+        "aspirations",
+        "complaints",
+        "citizen-report",
+        "sla",
+        "govtech"
+    ],
+    "authors": [
+        {
+            "name": "Pringgo J. Saputro",
+            "email": "odyinggo@gmail.com",
+            "role": "Lead Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/nawasara/aspirations/issues",
+        "source": "https://github.com/nawasara/aspirations"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nawasara\\Aspirations\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0|^12.0",
+        "spatie/laravel-permission": "^6.0",
+        "nawasara/api": "*",
+        "nawasara/registry": "*",
+        "nawasara/ui": "*",
+        "livewire/livewire": "^3.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Nawasara\\Aspirations\\AspirationsServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
