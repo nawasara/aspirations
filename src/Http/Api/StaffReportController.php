@@ -8,6 +8,9 @@ use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Http\Resources\StaffReportResource;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Exceptions\SubmissionException;
+use Nawasara\Aspirations\Models\Response;
+use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\ReportWorkflow;
 
 /**
@@ -26,6 +29,7 @@ class StaffReportController extends Controller
 {
     public function __construct(
         protected ReportWorkflow $workflow,
+        protected PhotoUploader $photos,
     ) {}
 
     /**
@@ -153,6 +157,54 @@ class StaffReportController extends Controller
 
         return $this->run($code, fn (Report $r) => $this->workflow
             ->rejectWork($r, $request->user(), $data['reason']));
+    }
+
+    /**
+     * Unggah foto bukti penanganan.
+     *
+     * Sumber BEBAS — kamera atau galeri (D2). Petugas bisa memotret saat sinyal
+     * mati lalu mengunggah dari kantor; memaksa kamera aplikasi akan menghukum
+     * petugas yang bekerja jujur di daerah bersinyal buruk. Penandanya dicatat
+     * untuk mata Kabid, bukan untuk memblokir.
+     */
+    public function uploadEvidence(Request $request, string $code): JsonResponse
+    {
+        $this->authorize('aspirations.report.respond');
+
+        $data = $request->validate([
+            'photo' => ['required', 'file', 'image'],
+            'source' => ['nullable', 'string', 'in:camera,gallery,unknown'],
+        ]);
+
+        $report = Report::where('code', $code)->first();
+
+        if (! $report) {
+            return $this->notFound();
+        }
+
+        // Ditempelkan ke tanggapan TERAKHIR petugas ini, supaya fotonya muncul
+        // di langkah linimasa yang benar — bukan menggantung tanpa konteks.
+        $response = Response::where('report_id', $report->id)
+            ->where('user_id', $request->user()->getAuthIdentifier())
+            ->latest('id')
+            ->first();
+
+        try {
+            $this->photos->storeEvidencePhoto(
+                $report,
+                $response,
+                $request->file('photo'),
+                $data['source'] ?? 'unknown',
+            );
+        } catch (SubmissionException $e) {
+            return response()->json([
+                'error' => ['code' => 'upload_rejected', 'message' => $e->getMessage()],
+            ], 422);
+        }
+
+        $report->load(['category', 'opd', 'attachments']);
+
+        return (new StaffReportResource($report))->response();
     }
 
     /**

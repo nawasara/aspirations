@@ -26,3 +26,5 @@ Route::post('/reports/{code}/start', [StaffReportController::class, 'startWork']
 Route::post('/reports/{code}/submit', [StaffReportController::class, 'submitForVerification'])->name('reports.submit');
 Route::post('/reports/{code}/approve', [StaffReportController::class, 'approve'])->name('reports.approve');
 Route::post('/reports/{code}/reject', [StaffReportController::class, 'rejectWork'])->name('reports.reject');
+
+Route::post('/reports/{code}/evidence', [StaffReportController::class, 'uploadEvidence'])->name('reports.evidence');

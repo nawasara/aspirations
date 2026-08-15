@@ -27,3 +27,5 @@ Route::get('/reports/similar', [CitizenReportController::class, 'similar'])->nam
 Route::get('/reports', [CitizenReportController::class, 'index'])->name('reports.index');
 Route::post('/reports', [CitizenReportController::class, 'store'])->name('reports.store');
 Route::get('/reports/{code}', [CitizenReportController::class, 'show'])->name('reports.show');
+
+Route::post('/reports/{code}/photos', [CitizenReportController::class, 'uploadPhoto'])->name('reports.photos');

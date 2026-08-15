@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Http\Resources\ReportResource;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\ReportSubmission;
 
 /**
@@ -22,6 +23,7 @@ class CitizenReportController extends Controller
 {
     public function __construct(
         protected ReportSubmission $submission,
+        protected PhotoUploader $photos,
     ) {}
 
     /**
@@ -127,6 +129,48 @@ class CitizenReportController extends Controller
             ->load(['category', 'opd']);
 
         return ReportResource::collection($similar)->response();
+    }
+
+    /**
+     * Unggah foto ke laporan milik sendiri.
+     *
+     * Terpisah dari POST /reports supaya laporan tersimpan lebih dulu: warga
+     * di sinyal lemah yang gagal mengunggah foto ketiga tidak kehilangan
+     * seluruh laporannya.
+     */
+    public function uploadPhoto(Request $request, string $code): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $data = $request->validate([
+            'photo' => ['required', 'file', 'image'],
+            // Dilaporkan aplikasi; diperiksa server (#21).
+            'source' => ['nullable', 'string', 'in:camera,gallery'],
+        ]);
+
+        $report = Report::where('code', $code)->where('keycloak_sub', $sub)->first();
+
+        if (! $report) {
+            return response()->json([
+                'error' => ['code' => 'not_found', 'message' => 'Laporan tidak ditemukan.'],
+            ], 404);
+        }
+
+        try {
+            $this->photos->storeReportPhoto(
+                $report,
+                $request->file('photo'),
+                $data['source'] ?? 'camera',
+            );
+        } catch (SubmissionException $e) {
+            return response()->json([
+                'error' => ['code' => 'upload_rejected', 'message' => $e->getMessage()],
+            ], 422);
+        }
+
+        $report->load(['category', 'opd', 'attachments']);
+
+        return (new ReportResource($report))->response();
     }
 
     /**
