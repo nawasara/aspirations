@@ -52,7 +52,7 @@ return [
             'hint' => 'PKL menghalangi trotoar, iklan ilegal, sarang tawon, ular masuk permukiman, balap liar, sound system berlebih',
             'icon_name' => 'shield-alert',
             'color' => 'red',
-            'opd_code' => 'SATPOL_PP',
+            'opd_code' => 'SATPOLPP',
             'sla_hours' => 72,    // 3 hari — SEMENTARA. Lihat catatan bencana.
         ],
         [
@@ -115,7 +115,7 @@ return [
             'hint' => 'Aduan perlindungan PMI, agensi nakal, masalah keberangkatan',
             'icon_name' => 'briefcase',
             'color' => 'amber',
-            'opd_code' => 'DINAS_TENAGA_KERJA',
+            'opd_code' => 'DISNAKER',
             'sla_hours' => 336,   // 14 hari — SEMENTARA
             // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
             // dapat dipotret — lihat migrasi requires_evidence.
