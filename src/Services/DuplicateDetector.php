@@ -4,6 +4,7 @@ namespace Nawasara\Aspirations\Services;
 
 use Illuminate\Support\Collection;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Support\Settings;
 
 /**
  * Deteksi laporan ganda: radius 50 m + kategori sama + 7 hari (#11).
@@ -29,8 +30,8 @@ class DuplicateDetector
         int $categoryId,
         ?int $excludeId = null,
     ): Collection {
-        $radius = (int) config('nawasara-aspirations.duplicate.radius_meters', 50);
-        $hari = (int) config('nawasara-aspirations.duplicate.window_days', 7);
+        $radius = Settings::duplicateRadius();
+        $hari = Settings::duplicateDays();
 
         // Kotak pembatas dulu, baru jarak sesungguhnya. Tanpa ini setiap
         // pengiriman menghitung jarak ke SELURUH laporan sekategori — mahal,

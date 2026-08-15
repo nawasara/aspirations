@@ -9,6 +9,7 @@ use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Models\Attachment;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Response;
+use Nawasara\Aspirations\Support\Settings;
 
 /**
  * Unggah foto laporan & bukti tindak lanjut ke MinIO.
@@ -122,7 +123,7 @@ class PhotoUploader
     /** Foto per laporan dibatasi (#), divalidasi di SERVER bukan hanya aplikasi. */
     protected function assertWithinPhotoLimit(Report $report): void
     {
-        $max = (int) config('nawasara-aspirations.limits.photos_per_report', 3);
+        $max = Settings::photosPerReport();
 
         $sudah = $report->attachments()->where('kind', Attachment::KIND_REPORT)->count();
 
@@ -133,7 +134,7 @@ class PhotoUploader
 
     protected function assertAcceptable(UploadedFile $file): void
     {
-        $maxKb = (int) config('nawasara-aspirations.limits.photo_max_kb', 2048);
+        $maxKb = Settings::photoMaxKb();
 
         if ($file->getSize() > $maxKb * 1024) {
             throw new SubmissionException(

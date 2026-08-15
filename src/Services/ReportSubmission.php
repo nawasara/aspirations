@@ -8,6 +8,7 @@ use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Models\Category;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Support\ReportCode;
+use Nawasara\Aspirations\Support\Settings;
 
 /**
  * Penerimaan laporan warga — satu-satunya jalan membuat baris `reports`.
@@ -110,7 +111,7 @@ class ReportSubmission
             ? Report::STATUS_DISPATCHED
             : Report::STATUS_SUBMITTED;
 
-        $responseHours = (int) config('nawasara-aspirations.sla.response_hours', 72);
+        $responseHours = Settings::responseHours();
 
         $report->promised_sla_hours = $category->sla_hours;
         $report->response_due_at = $this->addHours($receivedAt, $responseHours, $category);
@@ -158,7 +159,7 @@ class ReportSubmission
      */
     protected function assertWithinDailyLimit(string $keycloakSub): void
     {
-        $max = (int) config('nawasara-aspirations.limits.reports_per_day', 5);
+        $max = Settings::reportsPerDay();
 
         if ($max <= 0) {
             return;

@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Support\Settings;
 
 /**
  * Tutup laporan selesai yang tidak kunjung dinilai warga (#7).
@@ -34,7 +35,7 @@ class AutoCloseJob implements ShouldQueue
 
     public function handle(): void
     {
-        $hari = (int) config('nawasara-aspirations.rating.auto_close_days', 7);
+        $hari = Settings::autoCloseDays();
         $batas = now()->subDays($hari);
         $ditutup = 0;
 

@@ -10,6 +10,7 @@ use Nawasara\Aspirations\Http\Resources\ReportResource;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\ReportSubmission;
+use Nawasara\Aspirations\Support\Settings;
 
 /**
  * Endpoint laporan untuk APLIKASI WARGA.
@@ -83,7 +84,7 @@ class CitizenReportController extends Controller
     {
         $sub = $this->citizenSub($request);
 
-        $maks = (int) config('nawasara-aspirations.limits.description_max', 500);
+        $maks = Settings::descriptionMax();
 
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:nawasara_aspirations_categories,id'],

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Response;
+use Nawasara\Aspirations\Support\Settings;
 use Nawasara\Registry\Support\MembershipResolver;
 
 /**
@@ -118,7 +119,7 @@ class ReportWorkflow
                 // cepat tercatat lambat gara-gara atasannya menunda.
                 $r->resolution_submitted_at = now();
 
-                $jam = (int) config('nawasara-aspirations.sla.verification_hours', 48);
+                $jam = Settings::verificationHours();
                 $r->verification_due_at = now()->addHours($jam);
             }
         );
