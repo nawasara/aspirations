@@ -82,9 +82,9 @@ class GoogleGeocoder implements GeocodingProvider
             return null;
         }
 
-        $ambil = function (string $tipe) use ($result): ?string {
+        $component = function (string $type) use ($result): ?string {
             foreach ($result['address_components'] ?? [] as $k) {
-                if (in_array($tipe, $k['types'] ?? [], true)) {
+                if (in_array($type, $k['types'] ?? [], true)) {
                     return $k['long_name'] ?? null;
                 }
             }
@@ -94,8 +94,8 @@ class GoogleGeocoder implements GeocodingProvider
 
         return [
             'full_address' => $result['formatted_address'] ?? null,
-            'village' => $ambil('administrative_area_level_4'),
-            'district' => $ambil('administrative_area_level_3'),
+            'village' => $component('administrative_area_level_4'),
+            'district' => $component('administrative_area_level_3'),
         ];
     }
 }

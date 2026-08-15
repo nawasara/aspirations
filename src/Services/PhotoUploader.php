@@ -125,9 +125,9 @@ class PhotoUploader
     {
         $max = Settings::photosPerReport();
 
-        $sudah = $report->attachments()->where('kind', Attachment::KIND_REPORT)->count();
+        $alreadyToday = $report->attachments()->where('kind', Attachment::KIND_REPORT)->count();
 
-        if ($sudah >= $max) {
+        if ($alreadyToday >= $max) {
             throw new SubmissionException("Maksimal {$max} foto per laporan.");
         }
     }
@@ -200,14 +200,14 @@ class PhotoUploader
             return null;
         }
 
-        $divide = function ($pecahan) {
-            if (! str_contains((string) $pecahan, '/')) {
-                return (float) $pecahan;
+        $divide = function ($fraction) {
+            if (! str_contains((string) $fraction, '/')) {
+                return (float) $fraction;
             }
 
-            [$atas, $bawah] = explode('/', (string) $pecahan);
+            [$numerator, $denominator] = explode('/', (string) $fraction);
 
-            return (float) $bawah === 0.0 ? 0.0 : (float) $atas / (float) $bawah;
+            return (float) $denominator === 0.0 ? 0.0 : (float) $numerator / (float) $denominator;
         };
 
         $degrees = $divide($exif[$key][0] ?? 0);

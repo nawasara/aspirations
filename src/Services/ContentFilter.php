@@ -36,7 +36,7 @@ class ContentFilter
      * "monyet" — keduanya hewan yang wajar dilaporkan warga). Menyaringnya
      * akan menghasilkan lebih banyak salah-tandai daripada tangkapan benar.
      */
-    protected const KASAR = [
+    protected const PROFANITY = [
         // Umpatan yang tidak punya makna lain
         'bangsat', 'kontol', 'memek', 'ngentot', 'jancok', 'jancuk',
         'asu', 'bajingan', 'keparat', 'brengsek', 'tolol', 'goblok',
@@ -50,7 +50,7 @@ class ContentFilter
      * yang marah, ini menandakan sesuatu yang tidak boleh tampil di kanal
      * pemerintah sama sekali.
      */
-    protected const SARA = [
+    protected const SLURS = [
         'cina', 'cino', 'kafir', 'kapir', 'pribumi', 'aseng',
     ];
 
@@ -67,13 +67,13 @@ class ContentFilter
         $reasons = [];
         $words = [];
 
-        $profanityHits = $this->matchWords($combined, self::KASAR);
+        $profanityHits = $this->matchWords($combined, self::PROFANITY);
         if ($profanityHits !== []) {
             $reasons[] = 'kata_kasar';
             $words = array_merge($words, $profanityHits);
         }
 
-        $slurHits = $this->matchWords($combined, self::SARA);
+        $slurHits = $this->matchWords($combined, self::SLURS);
         if ($slurHits !== []) {
             $reasons[] = 'sara';
             $words = array_merge($words, $slurHits);

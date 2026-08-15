@@ -36,14 +36,14 @@ class AutoCloseJob implements ShouldQueue
     public function handle(): void
     {
         $days = Settings::autoCloseDays();
-        $batas = now()->subDays($days);
+        $cutoff = now()->subDays($days);
         $closed = 0;
 
         Report::withoutGlobalScopes()
             ->where('status', Report::STATUS_RESOLVED)
             ->whereNull('rating')
             ->whereNotNull('verified_at')
-            ->where('verified_at', '<', $batas)
+            ->where('verified_at', '<', $cutoff)
             // Penanda "sudah lewat masa penilaian" — dipakai panel untuk
             // membedakan laporan yang menunggu nilai dari yang memang sudah
             // tuntas tanpa nilai.

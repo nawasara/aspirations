@@ -54,9 +54,9 @@ class StaffReportController extends Controller
             ->with(['category', 'opd', 'responder', 'verifier'])
             ->when($data['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
             ->when($data['overdue'] ?? null, fn ($q) => $q->overdue())
-            ->when($data['q'] ?? null, fn ($q, $cari) => $q->where(function ($x) use ($cari) {
-                $x->where('code', 'like', "%{$cari}%")
-                  ->orWhere('title', 'like', "%{$cari}%");
+            ->when($data['q'] ?? null, fn ($q, $search) => $q->where(function ($x) use ($search) {
+                $x->where('code', 'like', "%{$search}%")
+                  ->orWhere('title', 'like', "%{$search}%");
             }))
             // Tenggat terdekat di atas: yang paling genting terlihat lebih dulu,
             // tanpa petugas harus memilih urutan.

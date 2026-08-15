@@ -98,9 +98,9 @@ class CheckSlaJob implements ShouldQueue
         $hoursLate = $passedAt->diffInHours(now(), false);
         $level = $report->escalation_level;
 
-        foreach (self::ESCALATE_AFTER_HOURS as $tingkat => $threshold) {
+        foreach (self::ESCALATE_AFTER_HOURS as $level => $threshold) {
             if ($hoursLate >= $threshold) {
-                $level = max($level, $tingkat);
+                $level = max($level, $level);
             }
         }
 

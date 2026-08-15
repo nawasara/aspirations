@@ -37,8 +37,8 @@ class ReportCode
             ->orderByDesc('code')
             ->value('code');
 
-        $urut = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+        $sequence = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
 
-        return $prefix.str_pad((string) $urut, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
     }
 }
