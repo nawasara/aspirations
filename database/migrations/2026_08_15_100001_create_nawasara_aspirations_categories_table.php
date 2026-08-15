@@ -18,7 +18,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nawasara_aspirations_categories', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             // ⚠️ TIDAK BOLEH BERUBAH setelah kategori dipakai melapor.
             // `code` adalah kunci pemetaan ikon di Flutter DAN rujukan laporan
@@ -77,7 +77,7 @@ return new class extends Migration
             // DISIAPKAN, TIDAK DIPAKAI — semua NULL. Selama NULL, perilakunya
             // persis datar. Menambah kolom ini belakangan, saat sudah ada
             // ratusan ribu laporan, jauh lebih mahal daripada sekarang.
-            $table->foreignId('parent_id')->nullable()
+            $table->foreignUuid('parent_id')->nullable()
                 ->constrained('nawasara_aspirations_categories')->nullOnDelete();
 
             $table->timestamps();

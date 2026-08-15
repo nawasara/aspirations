@@ -2,6 +2,7 @@
 
 namespace Nawasara\Aspirations\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,23 @@ use Nawasara\Registry\Concerns\ScopedToOpd;
  */
 class Report extends Model
 {
+    /**
+     * Primary key UUID.
+     *
+     * `HasUuids` menghasilkan UUID v7 yang TERURUT WAKTU — bukan v4 yang acak
+     * sepenuhnya. Ini penting untuk basis data: primary key acak membuat InnoDB
+     * menyisipkan baris ke tengah-tengah indeks berkelompok, sehingga halaman
+     * terus terpecah dan tabel membengkak seiring data tumbuh. UUID terurut
+     * waktu menyisip di ujung, seperti auto-increment.
+     *
+     * ⚠️ Kolom `opd_id`, `responded_by`, `verifier_id`, `verified_by`, dan
+     * `user_id` TETAP bigint — semuanya menunjuk tabel milik paket lain
+     * (`nawasara_registry_opd`, `users`) yang memakai auto-increment. Tabel ini
+     * memang campuran, dan itu konsekuensi yang disengaja: mengubah tabel
+     * paket lain berarti menyentuh data yang sudah hidup di produksi.
+     */
+    use HasUuids;
+
     /**
      * Isolasi per-OPD (#14) — Admin OPD hanya melihat laporan miliknya.
      *

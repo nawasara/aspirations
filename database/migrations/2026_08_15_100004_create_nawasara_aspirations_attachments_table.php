@@ -16,13 +16,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nawasara_aspirations_attachments', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
-            $table->foreignId('report_id')
+            $table->foreignUuid('report_id')
                 ->constrained('nawasara_aspirations_reports')->cascadeOnDelete();
 
             // Terisi bila foto ini bukti tindak lanjut, bukan foto warga.
-            $table->foreignId('response_id')->nullable()
+            $table->foreignUuid('response_id')->nullable()
                 ->constrained('nawasara_aspirations_responses')->cascadeOnDelete();
 
             // Dicatat PER BARIS, bukan diasumsikan dari config — kalau bucket

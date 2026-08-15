@@ -89,7 +89,7 @@ class CitizenReportController extends Controller
         $maks = Settings::descriptionMax();
 
         $data = $request->validate([
-            'category_id' => ['required', 'integer', 'exists:nawasara_aspirations_categories,id'],
+            'category_id' => ['required', 'uuid', 'exists:nawasara_aspirations_categories,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:'.$maks],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -123,7 +123,7 @@ class CitizenReportController extends Controller
     public function similar(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'category_id' => ['required', 'integer'],
+            'category_id' => ['required', 'uuid'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);

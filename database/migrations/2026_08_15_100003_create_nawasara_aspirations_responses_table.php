@@ -16,9 +16,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nawasara_aspirations_responses', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
-            $table->foreignId('report_id')
+            $table->foreignUuid('report_id')
                 ->constrained('nawasara_aspirations_reports')->cascadeOnDelete();
 
             // Pelaku. Ditampilkan di linimasa ("oleh: Admin DPUPKP") supaya

@@ -15,9 +15,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nawasara_aspirations_supports', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
-            $table->foreignId('report_id')
+            $table->foreignUuid('report_id')
                 ->constrained('nawasara_aspirations_reports')->cascadeOnDelete();
 
             $table->string('keycloak_sub');

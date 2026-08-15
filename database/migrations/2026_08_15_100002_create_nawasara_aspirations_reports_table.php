@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nawasara_aspirations_reports', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             // Kode publik (LB-2026-08-0412), bukan id basis data. Urut PER
             // BULAN, bukan global — lihat AspirationCode.
@@ -26,7 +26,7 @@ return new class extends Migration
             // proses hukum.
             $table->string('keycloak_sub')->index();
 
-            $table->foreignId('category_id')
+            $table->foreignUuid('category_id')
                 ->constrained('nawasara_aspirations_categories');
 
             // Hasil disposisi otomatis saat laporan masuk (#18).
