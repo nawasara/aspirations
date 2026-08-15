@@ -3,6 +3,9 @@
 namespace Nawasara\Aspirations;
 
 use Illuminate\Support\ServiceProvider;
+use Nawasara\Aspirations\Jobs\AutoCloseJob;
+use Nawasara\Aspirations\Jobs\CheckSlaJob;
+use Nawasara\Aspirations\Jobs\CheckVerificationDueJob;
 
 class AspirationsServiceProvider extends ServiceProvider
 {
@@ -19,10 +22,59 @@ class AspirationsServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->registerCitizenRoutes();
         $this->registerStaffRoutes();
+        $this->registerSchedule();
 
         $this->publishes([
             __DIR__.'/../config/nawasara-aspirations.php' => config_path('nawasara-aspirations.php'),
         ], 'nawasara-aspirations-config');
+    }
+
+    /**
+     * Penjadwalan job SLA.
+     *
+     * Memakai `$schedule->call()`, BUKAN `$schedule->command()` — console
+     * command yang didaftarkan dari paket tidak selalu muncul di kernel Artisan
+     * saat scheduler boot, dan kegagalannya diam-diam (CLAUDE.md §7).
+     */
+    protected function registerSchedule(): void
+    {
+        $this->app->booted(function () {
+            if (! $this->app->runningInConsole()) {
+                return;
+            }
+
+            if (! config('nawasara-aspirations.scheduler.enabled', true)) {
+                return;
+            }
+
+            $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+
+            // Tiap jam: memeriksa DUA rentang sekaligus (tanggapan pertama dan
+            // penyelesaian). Sejam cukup rapat untuk SLA berhari-hari, dan
+            // tidak membebani basis data.
+            //
+            // ⚠️ Kategori Bencana berjanji 3 jam. Bila kategori seperti itu
+            // dipakai, pemeriksaan per jam berarti eskalasi bisa terlambat
+            // sampai 59 menit — perlu ditinjau sebelum kategori berjam aktif.
+            $schedule->call(fn () => CheckSlaJob::dispatch())
+                ->name('nawasara-aspirations:check-sla')
+                ->hourly()
+                ->withoutOverlapping(10);
+
+            $schedule->call(fn () => CheckVerificationDueJob::dispatch())
+                ->name('nawasara-aspirations:check-verification')
+                ->hourly()
+                ->withoutOverlapping(10);
+
+            // Harian. WAJIB ber-timezone: app.timezone = UTC, sehingga tanpa
+            // ini "jam 2 pagi" jatuh pukul 9 pagi WIB — di tengah jam kerja,
+            // saat petugas sedang membuka panelnya.
+            $schedule->call(fn () => AutoCloseJob::dispatch())
+                ->name('nawasara-aspirations:auto-close')
+                ->dailyAt('02:00')
+                ->timezone('Asia/Jakarta')
+                ->withoutOverlapping(10);
+        });
     }
 
     /**
