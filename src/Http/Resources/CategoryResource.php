@@ -38,6 +38,11 @@ class CategoryResource extends JsonResource
             // padahal itu aturan otorisasi milik server (#18).
             'opd_name' => $this->whenLoaded('opd', fn () => $this->opd?->name),
 
+            // Aplikasi & panel perlu tahu di MUKA apakah foto bukti akan
+            // diminta saat menutup laporan — supaya petugas tidak baru
+            // mengetahuinya setelah menekan tombol selesai.
+            'requires_evidence' => (bool) $this->requires_evidence,
+
             'sort_order' => (int) $this->sort_order,
         ];
     }

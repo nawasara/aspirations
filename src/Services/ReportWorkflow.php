@@ -266,8 +266,16 @@ class ReportWorkflow
             throw new WorkflowException('Anda tidak berwenang memverifikasi laporan.');
         }
 
-        // #3 — foto bukti wajib.
-        if (! $report->attachments()->where('kind', 'evidence')->exists()) {
+        // #3 — foto bukti wajib, TETAPI hanya untuk kategori yang memang
+        // menghasilkan pekerjaan fisik.
+        //
+        // Aspirasi warga dijawab dengan tanggapan, bukan dengan foto; laporan
+        // pungli berujung pemeriksaan Inspektorat, bukan sesuatu yang dapat
+        // dipotret. Memaksa foto di situ hanya mendorong petugas memotret apa
+        // saja agar tombol "selesai" dapat ditekan — dan foto asal-asalan
+        // membuat SELURUH bukti kehilangan arti, termasuk yang sungguhan.
+        if ($report->category?->requires_evidence
+            && ! $report->attachments()->where('kind', 'evidence')->exists()) {
             throw new WorkflowException(
                 'Laporan tidak dapat diselesaikan tanpa foto bukti penanganan.'
             );

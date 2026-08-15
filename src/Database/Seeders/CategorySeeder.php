@@ -45,6 +45,7 @@ class CategorySeeder extends Seeder
                     'icon_name' => $data['icon_name'],
                     'color' => $data['color'],
                     'is_sensitive' => $data['is_sensitive'] ?? false,
+                    'requires_evidence' => $data['requires_evidence'] ?? true,
                 ];
 
                 // MENGISI yang masih kosong bukan menimpa keputusan. Kategori
@@ -73,6 +74,12 @@ class CategorySeeder extends Seeder
                 'sort_order' => $urutan,
                 'is_active' => true,
                 'is_sensitive' => $data['is_sensitive'] ?? false,
+
+                // Default true: kategori baru harus menyertakan bukti kecuali
+                // sengaja dinyatakan tidak perlu. Bawaan yang longgar akan
+                // membuat kategori yang lupa disetel kehilangan penjaganya
+                // tanpa ada yang menyadari.
+                'requires_evidence' => $data['requires_evidence'] ?? true,
             ]);
         }
 

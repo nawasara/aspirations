@@ -25,6 +25,7 @@ class Category extends Model
         'uses_working_days' => 'boolean',
         'is_active' => 'boolean',
         'is_sensitive' => 'boolean',
+        'requires_evidence' => 'boolean',
     ];
 
     public function reports(): HasMany

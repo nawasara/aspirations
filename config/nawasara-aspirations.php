@@ -117,6 +117,9 @@ return [
             'color' => 'amber',
             'opd_code' => 'DINAS_TENAGA_KERJA',
             'sla_hours' => 336,   // 14 hari — SEMENTARA
+            // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
+            // dapat dipotret — lihat migrasi requires_evidence.
+            'requires_evidence' => false,
         ],
         [
             'code' => 'perdagangan',
@@ -137,6 +140,9 @@ return [
             'sla_hours' => 336,   // 14 hari — SEMENTARA
             // Laporan di sini TIDAK boleh didisposisi ke OPD yang dilaporkan (#9).
             'is_sensitive' => true,
+            // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
+            // dapat dipotret — lihat migrasi requires_evidence.
+            'requires_evidence' => false,
         ],
         [
             'code' => 'kominfo',
@@ -146,6 +152,18 @@ return [
             'color' => 'sky',
             'opd_code' => 'KOMINFO',
             'sla_hours' => 168,   // 7 hari — SEMENTARA
+        ],
+        [
+            'code' => 'aspirasi',
+            'name' => 'Aspirasi & Usulan',
+            'hint' => 'Usulan pembangunan, ide untuk daerah, masukan kebijakan',
+            'icon_name' => 'message-square',
+            'color' => 'fuchsia',
+            'opd_code' => 'BAPPEDA',
+            'sla_hours' => 720,   // 30 hari — SEMENTARA
+            // Aspirasi dijawab dengan tanggapan tertulis; tidak ada pekerjaan
+            // fisik yang dapat difoto.
+            'requires_evidence' => false,
         ],
     ],
 
