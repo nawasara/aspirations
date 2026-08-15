@@ -30,6 +30,7 @@ class ReportSubmission
 {
     public function __construct(
         protected DuplicateDetector $duplicates,
+        protected ContentFilter $filter,
     ) {}
 
     /**
@@ -117,7 +118,26 @@ class ReportSubmission
         // membuatnya terlihat di panel Admin Kabupaten.
         $report->opd_id = $category->opd_id;
 
-        $report->status = $category->opd_id
+        // Saringan isi (#20) — pengganti pemeriksaan Admin Kabupaten yang
+        // dihapus D1. Laporan yang ditandai TIDAK ditolak dan TIDAK kehilangan
+        // tenggatnya; ia hanya belum diteruskan ke OPD sampai ditinjau manusia.
+        //
+        // Warga yang marah sering memakai kata kasar, dan kemarahannya sah —
+        // parkir liar yang dibiarkan bertahun-tahun memang membuat orang
+        // jengkel. Yang ditahan adalah tampilnya di panel OPD, bukan haknya
+        // melapor.
+        $saringan = $this->filter->check($report->title, $report->description);
+
+        if ($saringan['flagged']) {
+            $report->flagged_at = $receivedAt;
+            $report->flag_reasons = $saringan['reasons'];
+        }
+
+        // Ditandai = belum diteruskan ke OPD, tetapi TETAP `submitted` dan
+        // TETAP distempel tenggatnya di bawah. Menghentikan jam di sini akan
+        // membuat laporan yang menunggu tinjauan tidak pernah terlihat
+        // terlambat — dan tinjauan yang terlupakan menjadi tak terdeteksi.
+        $report->status = ($category->opd_id && ! $saringan['flagged'])
             ? Report::STATUS_DISPATCHED
             : Report::STATUS_SUBMITTED;
 
