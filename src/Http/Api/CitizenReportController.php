@@ -1,0 +1,141 @@
+<?php
+
+namespace Nawasara\Aspirations\Http\Api;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Nawasara\Aspirations\Exceptions\SubmissionException;
+use Nawasara\Aspirations\Http\Resources\ReportResource;
+use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Services\ReportSubmission;
+
+/**
+ * Endpoint laporan untuk APLIKASI WARGA.
+ *
+ * Di belakang `api.citizen` (JWT realm warga), bukan `api.auth`. Identitas
+ * pelapor diambil dari token — TIDAK PERNAH dari badan permintaan. Menerima
+ * `keycloak_sub` dari pemanggil berarti siapa pun dapat mengirim laporan atas
+ * nama orang lain.
+ */
+class CitizenReportController extends Controller
+{
+    public function __construct(
+        protected ReportSubmission $submission,
+    ) {}
+
+    /**
+     * Laporan milik warga yang sedang masuk.
+     *
+     * Disaring pada `keycloak_sub` dari token, sehingga tidak ada cara meminta
+     * laporan warga lain — tidak ada parameter yang bisa diutak-atik.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $reports = Report::query()
+            ->where('keycloak_sub', $sub)
+            ->with(['category', 'opd'])
+            ->latest('received_at')
+            ->paginate(20);
+
+        return ReportResource::collection($reports)->response();
+    }
+
+    /**
+     * Detail satu laporan, beserta linimasa dan fotonya.
+     *
+     * Dicari lewat `code` (LB-2026-08-0412), bukan id — kode itulah yang
+     * dipegang warga, dan id berurutan akan mengundang orang menebak laporan
+     * milik orang lain.
+     */
+    public function show(Request $request, string $code): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $report = Report::query()
+            ->where('code', $code)
+            ->where('keycloak_sub', $sub)
+            ->with(['category', 'opd', 'responses' => fn ($q) => $q->public()->with('user'), 'attachments'])
+            ->first();
+
+        if (! $report) {
+            // 404, bukan 403 — membedakan "tidak ada" dari "bukan milik Anda"
+            // memberi tahu penebak bahwa kode itu ada.
+            return response()->json([
+                'error' => ['code' => 'not_found', 'message' => 'Laporan tidak ditemukan.'],
+            ], 404);
+        }
+
+        return (new ReportResource($report))->response();
+    }
+
+    /**
+     * Kirim laporan baru.
+     *
+     * Validasi bentuk di sini; aturan BISNIS (batas harian, disposisi, SLA) ada
+     * di ReportSubmission supaya berlaku lewat jalur mana pun laporan masuk.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $maks = (int) config('nawasara-aspirations.limits.description_max', 500);
+
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', 'exists:nawasara_aspirations_categories,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:'.$maks],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'location_accuracy' => ['nullable', 'numeric', 'min:0'],
+            'is_anonymous' => ['nullable', 'boolean'],
+            // Waktu pembuatan di ponsel — untuk laporan mode luring (#13).
+            'created_at_device' => ['nullable', 'date'],
+        ]);
+
+        try {
+            $report = $this->submission->submit($sub, $data);
+        } catch (SubmissionException $e) {
+            // Pesannya ditulis untuk dibaca warga; diteruskan apa adanya.
+            return response()->json([
+                'error' => ['code' => 'submission_rejected', 'message' => $e->getMessage()],
+            ], 422);
+        }
+
+        $report->load(['category', 'opd']);
+
+        return (new ReportResource($report))->response()->setStatusCode(201);
+    }
+
+    /**
+     * Laporan serupa di sekitar titik yang dipilih.
+     *
+     * Dipanggil aplikasi SEBELUM mengirim, supaya warga dapat memilih "Saya
+     * Juga Mengalami" alih-alih menambah laporan ketiga untuk lubang yang sama.
+     */
+    public function similar(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'integer'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $similar = $this->submission->findSimilar($data)
+            ->load(['category', 'opd']);
+
+        return ReportResource::collection($similar)->response();
+    }
+
+    /**
+     * `sub` warga dari token yang sudah diverifikasi middleware.
+     *
+     * Diambil dari atribut request, bukan dari input — lihat catatan kelas.
+     */
+    protected function citizenSub(Request $request): string
+    {
+        return (string) $request->attributes->get('citizen_sub');
+    }
+}
