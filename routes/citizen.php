@@ -29,3 +29,8 @@ Route::post('/reports', [CitizenReportController::class, 'store'])->name('report
 Route::get('/reports/{code}', [CitizenReportController::class, 'show'])->name('reports.show');
 
 Route::post('/reports/{code}/photos', [CitizenReportController::class, 'uploadPhoto'])->name('reports.photos');
+
+// Penilaian & dukungan — menutup lingkaran dari OPD kembali ke warga.
+Route::post('/reports/{code}/rate', [CitizenReportController::class, 'rate'])->name('reports.rate');
+Route::post('/reports/{code}/support', [CitizenReportController::class, 'support'])->name('reports.support');
+Route::delete('/reports/{code}/support', [CitizenReportController::class, 'unsupport'])->name('reports.unsupport');

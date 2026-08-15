@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Http\Resources\ReportResource;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Services\CitizenFeedback;
 use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\ReportSubmission;
 use Nawasara\Aspirations\Support\Settings;
@@ -25,6 +26,7 @@ class CitizenReportController extends Controller
     public function __construct(
         protected ReportSubmission $submission,
         protected PhotoUploader $photos,
+        protected CitizenFeedback $feedback,
     ) {}
 
     /**
@@ -172,6 +174,91 @@ class CitizenReportController extends Controller
         $report->load(['category', 'opd', 'attachments']);
 
         return (new ReportResource($report))->response();
+    }
+
+    /**
+     * Warga menilai laporannya (#6).
+     *
+     * Nilai rendah membuka kembali laporan — ditangani service, bukan di sini,
+     * supaya aturannya berlaku lewat jalur mana pun penilaian masuk.
+     */
+    public function rate(Request $request, string $code): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $report = Report::where('code', $code)->first();
+
+        if (! $report) {
+            return $this->notFoundJson();
+        }
+
+        try {
+            $report = $this->feedback->rate($report, $sub, $data['rating'], $data['comment'] ?? null);
+        } catch (SubmissionException $e) {
+            return response()->json([
+                'error' => ['code' => 'rating_rejected', 'message' => $e->getMessage()],
+            ], 422);
+        }
+
+        $report->load(['category', 'opd']);
+
+        return (new ReportResource($report))->response();
+    }
+
+    /** "Saya Juga Mengalami" — mendukung laporan warga lain (#15). */
+    public function support(Request $request, string $code): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        // Dicari TANPA menyaring pemilik: justru laporan orang lain yang
+        // didukung. Yang dijaga service adalah larangan mendukung laporan
+        // sendiri.
+        $report = Report::where('code', $code)->first();
+
+        if (! $report) {
+            return $this->notFoundJson();
+        }
+
+        try {
+            $report = $this->feedback->support($report, $sub);
+        } catch (SubmissionException $e) {
+            return response()->json([
+                'error' => ['code' => 'support_rejected', 'message' => $e->getMessage()],
+            ], 422);
+        }
+
+        $report->load(['category', 'opd']);
+
+        return (new ReportResource($report))->response();
+    }
+
+    /** Batalkan dukungan. */
+    public function unsupport(Request $request, string $code): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $report = Report::where('code', $code)->first();
+
+        if (! $report) {
+            return $this->notFoundJson();
+        }
+
+        $report = $this->feedback->unsupport($report, $sub);
+        $report->load(['category', 'opd']);
+
+        return (new ReportResource($report))->response();
+    }
+
+    protected function notFoundJson(): JsonResponse
+    {
+        return response()->json([
+            'error' => ['code' => 'not_found', 'message' => 'Laporan tidak ditemukan.'],
+        ], 404);
     }
 
     /**
