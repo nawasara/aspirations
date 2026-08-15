@@ -45,8 +45,16 @@ class CategorySeeder extends Seeder
                     'icon_name' => $data['icon_name'],
                     'color' => $data['color'],
                     'is_sensitive' => $data['is_sensitive'] ?? false,
-                    'requires_evidence' => $data['requires_evidence'] ?? true,
                 ];
+
+                // `requires_evidence` SENGAJA tidak ikut disegarkan.
+                // Ia keputusan kebijakan — admin yang menentukan kategori mana
+                // memerlukan foto bukti, lewat panel. Menyegarkannya dari
+                // config di setiap deploy akan mengembalikan keputusan itu ke
+                // nilai bawaan tanpa ada yang menyadari.
+                //
+                // Diisi HANYA saat kategori pertama kali dibuat (lihat create()
+                // di bawah).
 
                 // MENGISI yang masih kosong bukan menimpa keputusan. Kategori
                 // yang belum pernah punya OPD tidak dapat didisposisi sama
