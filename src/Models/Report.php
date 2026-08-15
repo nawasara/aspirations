@@ -5,6 +5,7 @@ namespace Nawasara\Aspirations\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Nawasara\Registry\Concerns\ScopedToOpd;
 
 /**
  * Laporan warga — model inti Lapor Bunda.
@@ -16,6 +17,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Report extends Model
 {
+    /**
+     * Isolasi per-OPD (#14) — Admin OPD hanya melihat laporan miliknya.
+     *
+     * Ditegakkan sebagai global scope, bukan where-clause di tiap query:
+     * satu klausa yang terlupa di satu tempat sudah cukup membocorkan laporan
+     * OPD lain, dan yang terlupa tidak memberi tanda apa pun.
+     *
+     * ⚠️ TIDAK berpengaruh pada jalur warga. Warga bukan baris `users`, jadi
+     * `auth()->user()` null di sana dan resolver menjawab 'privileged' — tanpa
+     * filter. Penyaringan milik-sendiri untuk warga dilakukan lewat
+     * `where('keycloak_sub')` di controller, dan itu memang tempat yang benar:
+     * kepemilikan warga bukan urusan OPD.
+     */
+    use ScopedToOpd;
+
     protected $table = 'nawasara_aspirations_reports';
 
     protected $guarded = [];
@@ -58,6 +74,18 @@ class Report extends Model
         self::STATUS_IN_PROGRESS,
         self::STATUS_AWAITING_VERIFICATION,
     ];
+
+    /**
+     * Peran yang boleh melihat lintas-OPD.
+     *
+     * Inspektorat masuk karena laporan sensitif (pungli, kelalaian aparatur)
+     * memang harus dapat diperiksa lintas dinas — itu tugasnya. Pengawas SLA
+     * masuk karena rekap kepatuhan mustahil dibuat dari satu OPD saja.
+     */
+    protected static function privilegedRoles(): array
+    {
+        return ['developer', 'inspektorat', 'pengawas-sla', 'admin-kabupaten'];
+    }
 
     public function category(): BelongsTo
     {

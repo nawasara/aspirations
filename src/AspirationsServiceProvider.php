@@ -18,10 +18,28 @@ class AspirationsServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->registerCitizenRoutes();
+        $this->registerStaffRoutes();
 
         $this->publishes([
             __DIR__.'/../config/nawasara-aspirations.php' => config_path('nawasara-aspirations.php'),
         ], 'nawasara-aspirations-config');
+    }
+
+    /**
+     * Rute panel staf — di belakang `api.staff` (JWT realm pegawai).
+     *
+     * Prefix dipisah dari jalur warga (`/staff` vs `/aspirations`) supaya
+     * tidak ada endpoint yang tanpa sengaja dapat dicapai dua jenis token.
+     * Batas antara "milik warga" dan "milik OPD" harus terlihat dari URL-nya.
+     */
+    protected function registerStaffRoutes(): void
+    {
+        $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/staff/aspirations';
+
+        \Illuminate\Support\Facades\Route::prefix($prefix)
+            ->middleware(['api', 'api.staff'])
+            ->name('nawasara-aspirations.staff.')
+            ->group(__DIR__.'/../routes/staff.php');
     }
 
     /**
