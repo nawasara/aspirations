@@ -220,11 +220,23 @@ return [
     |--------------------------------------------------------------------------
     */
     'storage' => [
-        // MinIO lewat disk S3. Bucket PRIVAT â€” foto warga memuat wajah, pelat
+        // MinIO lewat disk S3. Bucket PRIVAT — foto warga memuat wajah, pelat
         // nomor, dan bagian dalam rumah; bucket public-read berarti siapa pun
         // yang menebak kunci dapat mengunduhnya dan mesin pencari akan
         // mengindeksnya.
+        //
+        // KREDENSIAL SERVER ADA DI VAULT (group `minio`), bukan di sini dan
+        // bukan di .env — admin dapat menggantinya lewat panel saat kunci
+        // bocor, tanpa akses server dan tanpa deploy ulang.
         'disk' => env('ASPIRATIONS_DISK', 'minio'),
+
+        // Bucket khusus paket ini. Satu server MinIO melayani banyak bucket
+        // dengan kunci yang sama; memisahkan bucket per paket membuat foto
+        // warga tidak bercampur dengan berkas paket lain, dan memudahkan
+        // menerapkan aturan penyimpanan (retensi, versioning) yang berbeda.
+        //
+        // Dikosongkan berarti memakai bucket bawaan dari Vault.
+        'bucket' => env('ASPIRATIONS_BUCKET', 'nawasara-aspirations'),
 
         // Umur URL presigned (detik). Pendek dengan sengaja.
         'url_ttl' => (int) env('ASPIRATIONS_URL_TTL', 900),

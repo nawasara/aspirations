@@ -51,8 +51,15 @@ class Attachment extends Model
         $ttl = (int) config('nawasara-aspirations.storage.url_ttl', 900);
 
         try {
-            return Storage::disk($this->disk)
-                ->temporaryUrl($this->path, now()->addSeconds($ttl));
+            // Bucket yang TERCATAT pada baris ini, bukan yang sedang disetel di
+            // config. Bila bucket pernah diganti, foto lama tetap harus terbaca
+            // dari tempat ia benar-benar disimpan.
+            $disk = ($this->disk === 'minio' && $this->bucket
+                && class_exists(\Nawasara\Vault\Services\MinioDisk::class))
+                    ? \Nawasara\Vault\Services\MinioDisk::make($this->bucket)
+                    : Storage::disk($this->disk);
+
+            return $disk->temporaryUrl($this->path, now()->addSeconds($ttl));
         } catch (\Throwable) {
             // Disk belum terpasang atau berkas hilang: kembalikan null supaya
             // satu foto rusak tidak menjatuhkan seluruh halaman laporan.

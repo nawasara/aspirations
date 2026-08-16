@@ -75,16 +75,28 @@ directly — the config path is the fallback, not the source of truth.
 
 ### Storage
 
-```env
-MINIO_ENDPOINT=https://minio.example
-MINIO_ACCESS_KEY=...
-MINIO_SECRET_KEY=...
-MINIO_BUCKET=nawasara
+Server credentials live in **Vault**, not in `.env` — group `minio`
+(Pengaturan → Vault). An admin fills in endpoint, access key and secret key
+there, and the Test button writes a probe object and deletes it again, so a
+read-only key fails at setup rather than on the first citizen upload.
+
+The bucket this package writes to is its own:
+
+```php
+// config/nawasara-aspirations.php
+'storage' => [
+    'bucket' => env('ASPIRATIONS_BUCKET', 'nawasara-aspirations'),
+],
 ```
+
+One MinIO server, one set of keys, a bucket per package. The bucket actually
+used is recorded on each attachment row, so changing this setting later does
+not orphan existing photos.
 
 The bucket must be **private**. Citizen photos carry faces, plates and the
 inside of people's homes, so access is always through presigned URLs with a
-short TTL. Use credentials scoped to this bucket alone, not a MinIO admin key.
+short TTL. Use credentials scoped to this server's buckets, not a MinIO admin
+key.
 
 ### Geocoding
 

@@ -55,6 +55,23 @@ class PhotoUploader
     }
 
     /**
+     * Disk yang menunjuk bucket tertentu.
+     *
+     * Untuk disk `minio`, bucket dapat berbeda per paket meski kredensial
+     * servernya sama, jadi disk dibangun ulang dengan bucket yang diminta.
+     * Disk lain (mis. `local` saat pengujian) tidak mengenal bucket dan
+     * dipakai apa adanya.
+     */
+    protected function diskFor(string $disk, ?string $bucket): \Illuminate\Contracts\Filesystem\Filesystem
+    {
+        if ($disk === 'minio' && $bucket !== null && class_exists(\Nawasara\Vault\Services\MinioDisk::class)) {
+            return \Nawasara\Vault\Services\MinioDisk::make($bucket);
+        }
+
+        return Storage::disk($disk);
+    }
+
+    /**
      * Simpan foto bukti tindak lanjut.
      *
      * Sumber bebas — lihat catatan kelas. Yang dicatat adalah penandanya.
@@ -78,6 +95,7 @@ class PhotoUploader
         ?Response $response = null,
     ): Attachment {
         $disk = (string) config('nawasara-aspirations.storage.disk', 'minio');
+        $bucket = (string) config('nawasara-aspirations.storage.bucket') ?: null;
 
         // Kunci objek disusun agar mudah ditelusuri manusia saat memeriksa
         // bucket, dan ULID di ujungnya mencegah dua unggahan bertabrakan.
@@ -90,7 +108,10 @@ class PhotoUploader
             $file->getClientOriginalExtension() ?: 'jpg',
         );
 
-        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+        // Bucket paket ini, bukan bucket bawaan Vault. MinioDisk membangunnya
+        // dari kredensial yang sama; yang berbeda hanya tujuannya.
+        $this->diskFor($disk, $bucket)
+            ->put($path, file_get_contents($file->getRealPath()));
 
         $exif = $this->readExif($file);
 
@@ -99,8 +120,11 @@ class PhotoUploader
             'response_id' => $response?->id,
 
             // Dicatat per baris, bukan diasumsikan dari config — kalau
-            // penyimpanan pindah, berkas lama tetap ketemu.
+            // penyimpanan pindah, berkas lama tetap ketemu. Bucket ikut
+            // dicatat karena alasan yang sama: mengubah bucket di config
+            // tidak boleh membuat foto lama tak terbaca.
             'disk' => $disk,
+            'bucket' => $bucket,
             'path' => $path,
 
             'mime' => $file->getMimeType(),
