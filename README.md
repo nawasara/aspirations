@@ -85,9 +85,14 @@ The bucket this package writes to is its own:
 ```php
 // config/nawasara-aspirations.php
 'storage' => [
-    'bucket' => env('ASPIRATIONS_BUCKET', 'nawasara-aspirations'),
+    'disk'   => 'minio',
+    'bucket' => 'nawasara-aspirations',
 ],
 ```
+
+Written plainly rather than through `env()`. The bucket name is not a secret
+and does not differ between environments, so an env var would only add a second
+place to look when the value in effect turns out not to be the expected one.
 
 One MinIO server, one set of keys, a bucket per package. The bucket actually
 used is recorded on each attachment row, so changing this setting later does

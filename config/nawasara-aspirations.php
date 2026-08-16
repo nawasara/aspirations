@@ -171,18 +171,29 @@ return [
     |--------------------------------------------------------------------------
     | SLA
     |--------------------------------------------------------------------------
+    |
+    | ⚠️ Angka pada blok `sla`, `limits`, dan `duplicate` hanyalah NILAI AWAL.
+    | Yang berlaku dibaca dari tabel setting lewat Support\Settings, diubah
+    | admin di halaman Pengaturan Lapor. Nilai di sini dipakai hanya sebelum
+    | admin pernah menyentuhnya, dan sebagai penjaga bila baris setting-nya
+    | terhapus.
+    |
+    | Tidak lagi memakai env(): nilainya sudah dapat diubah dari panel, dan
+    | menyediakan jalur kedua lewat .env berarti ada dua tempat yang harus
+    | diperiksa saat angka yang berlaku ternyata bukan yang diduga.
+    |
     */
     'sla' => [
         // Batas TANGGAPAN PERTAMA, terpisah dari batas selesai. Inilah yang
         // paling terasa bagi warga: jalan berlubang wajar selesai 14 hari,
         // tetapi warga yang 14 hari tidak mendengar apa pun akan menyimpulkan
         // laporannya diabaikan lalu berhenti melapor.
-        'response_hours' => (int) env('ASPIRATIONS_RESPONSE_HOURS', 72),
+        'response_hours' => 72,
 
         // Batas Kabid memverifikasi setelah pekerjaan diserahkan. Terlalu
         // longgar: warga menunggu tanpa sebab. Terlalu ketat: Kabid menyetujui
         // asal-asalan.
-        'verification_hours' => (int) env('ASPIRATIONS_VERIFICATION_HOURS', 48),
+        'verification_hours' => 48,
     ],
 
     /*
@@ -193,13 +204,13 @@ return [
     'limits' => [
         // Maksimal laporan per warga per hari (#12). Dikunci pada keycloak_sub,
         // jadi tetap berlaku untuk laporan anonim â€” sistem tahu pengirimnya.
-        'reports_per_day' => (int) env('ASPIRATIONS_REPORTS_PER_DAY', 5),
+        'reports_per_day' => 5,
 
         // Foto per laporan. Divalidasi di SERVER, bukan hanya di aplikasi.
-        'photos_per_report' => (int) env('ASPIRATIONS_PHOTOS_PER_REPORT', 3),
+        'photos_per_report' => 3,
 
         // Ukuran maksimal per foto (KB) setelah aplikasi mengompresi.
-        'photo_max_kb' => (int) env('ASPIRATIONS_PHOTO_MAX_KB', 2048),
+        'photo_max_kb' => 2048,
 
         'description_max' => 500,
     ],
@@ -210,8 +221,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'duplicate' => [
-        'radius_meters' => (int) env('ASPIRATIONS_DUPLICATE_RADIUS', 50),
-        'window_days' => (int) env('ASPIRATIONS_DUPLICATE_DAYS', 7),
+        'radius_meters' => 50,
+        'window_days' => 7,
     ],
 
     /*
@@ -228,18 +239,23 @@ return [
         // KREDENSIAL SERVER ADA DI VAULT (group `minio`), bukan di sini dan
         // bukan di .env — admin dapat menggantinya lewat panel saat kunci
         // bocor, tanpa akses server dan tanpa deploy ulang.
-        'disk' => env('ASPIRATIONS_DISK', 'minio'),
+        //
+        // Tiga nilai di bawah BUKAN rahasia dan tidak berbeda antar lingkungan,
+        // jadi ditulis apa adanya. Membungkusnya dengan env() hanya menambah
+        // satu tempat lagi yang harus dicari orang saat nilainya perlu diubah,
+        // tanpa memberi keleluasaan yang benar-benar dipakai.
+        'disk' => 'minio',
 
         // Bucket khusus paket ini. Satu server MinIO melayani banyak bucket
         // dengan kunci yang sama; memisahkan bucket per paket membuat foto
         // warga tidak bercampur dengan berkas paket lain, dan memudahkan
         // menerapkan aturan penyimpanan (retensi, versioning) yang berbeda.
         //
-        // Dikosongkan berarti memakai bucket bawaan dari Vault.
-        'bucket' => env('ASPIRATIONS_BUCKET', 'nawasara-aspirations'),
+        // Dikosongkan (null) berarti memakai bucket bawaan dari Vault.
+        'bucket' => 'nawasara-aspirations',
 
         // Umur URL presigned (detik). Pendek dengan sengaja.
-        'url_ttl' => (int) env('ASPIRATIONS_URL_TTL', 900),
+        'url_ttl' => 900,
     ],
 
     /*
@@ -249,10 +265,10 @@ return [
     */
     'rating' => [
         // Tanpa penilaian sekian hari â†’ selesai otomatis (#7).
-        'auto_close_days' => (int) env('ASPIRATIONS_AUTO_CLOSE_DAYS', 7),
+        'auto_close_days' => 7,
 
         // Nilai <= ini membuka kembali laporan (#6).
-        'reopen_threshold' => (int) env('ASPIRATIONS_REOPEN_THRESHOLD', 2),
+        'reopen_threshold' => 2,
     ],
 
     /*
