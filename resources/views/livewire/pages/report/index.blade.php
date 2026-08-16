@@ -63,7 +63,10 @@
                 title="Tidak ada laporan"
                 description="Belum ada laporan yang cocok dengan penyaring yang dipilih." />
         @else
+            {{-- Isi baris WAJIB lewat <x-slot:table> — lihat catatan di
+                 halaman kategori. --}}
             <x-nawasara-ui::table :headers="['Kode', 'Judul', 'Kategori', 'OPD', 'Status', 'Batas Waktu', 'Dikirim']">
+                <x-slot:table>
                 @foreach ($reports as $report)
                     <tr wire:key="report-{{ $report->code }}">
                         <td class="px-6 py-4 text-sm font-medium text-neutral-800 dark:text-neutral-100">
@@ -109,6 +112,7 @@
                         </td>
                     </tr>
                 @endforeach
+                </x-slot:table>
             </x-nawasara-ui::table>
 
             <div class="mt-4">

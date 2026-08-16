@@ -22,7 +22,12 @@
                 title="Belum ada kategori"
                 description="Tambahkan kategori agar warga dapat memilih jenis laporannya." />
         @else
+            {{-- Isi baris WAJIB lewat <x-slot:table>. Komponen merender
+                 {{ $table }}, bukan slot bawaan — <tr> yang ditulis langsung
+                 di dalam komponen tidak akan muncul sama sekali, sementara
+                 header dan penghitung tetap tampil seolah semuanya baik. --}}
             <x-nawasara-ui::table :headers="['Kategori', 'Kode', 'OPD Tujuan', 'Batas Waktu', 'Foto Bukti', 'Status', '']">
+                <x-slot:table>
                 @foreach ($categories as $category)
                     <tr wire:key="cat-{{ $category->id }}">
                         <td class="px-6 py-4">
@@ -89,6 +94,7 @@
                         </td>
                     </tr>
                 @endforeach
+                </x-slot:table>
             </x-nawasara-ui::table>
         @endif
 
