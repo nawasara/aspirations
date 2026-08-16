@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
 
@@ -8,22 +8,22 @@ return [
     |--------------------------------------------------------------------------
     |
     | 13 urusan hasil rapat 13 Agustus 2026 (aset/data/URUSAN_DINAS.xlsx di
-    | repo GO). Ini ISI AWAL, bukan daftar mati — setelah di-seed, kategori
+    | repo GO). Ini ISI AWAL, bukan daftar mati â€” setelah di-seed, kategori
     | dikelola lewat panel dan boleh ditambah/diubah/dinonaktifkan tanpa
     | menyentuh berkas ini.
     |
-    | `opd_code` dicocokkan ke `nawasara_registry_opd.code` saat seed —
+    | `opd_code` dicocokkan ke `nawasara_registry_opd.code` saat seed â€”
     | HURUF BESAR, mengikuti kode yang sudah ada di registry. Polanya tidak
     | seragam (`DPUPKP` vs `DINAS_KESEHATAN`) karena registry diisi bertahap;
     | nilai di bawah disalin apa adanya dari sana, bukan ditebak. Bila
     | tidak ketemu, kategori tetap dibuat dengan opd_id NULL dan seeder
-    | melaporkannya — laporan pada kategori itu tidak dapat didisposisi
+    | melaporkannya â€” laporan pada kategori itu tidak dapat didisposisi
     | otomatis sampai OPD-nya terdaftar.
     |
-    | ⚠️ `sla_hours` di bawah masih ANGKA SEMENTARA. Hasil rapat menetapkan
+    | âš ï¸ `sla_hours` di bawah masih ANGKA SEMENTARA. Hasil rapat menetapkan
     | urusan dan dinas, TIDAK menetapkan batas waktu. Angka ini diturunkan dari
-    | daftar lama (03 §4) agar sistem dapat berjalan, dan WAJIB diganti dengan
-    | hasil kesepakatan OPD sebelum warga memakainya — ini janji yang
+    | daftar lama (03 Â§4) agar sistem dapat berjalan, dan WAJIB diganti dengan
+    | hasil kesepakatan OPD sebelum warga memakainya â€” ini janji yang
     | ditampilkan sebelum mengirim laporan.
     |
     */
@@ -35,7 +35,7 @@ return [
             'icon_name' => 'construction',
             'color' => 'stone',
             'opd_code' => 'DPUPKP',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
         ],
         [
             'code' => 'lingkungan',
@@ -44,7 +44,7 @@ return [
             'icon_name' => 'trees',
             'color' => 'lime',
             'opd_code' => 'DLH',
-            'sla_hours' => 72,    // 3 hari — SEMENTARA
+            'sla_hours' => 72,    // 3 hari â€” SEMENTARA
         ],
         [
             'code' => 'ketertiban',
@@ -53,7 +53,7 @@ return [
             'icon_name' => 'shield-alert',
             'color' => 'red',
             'opd_code' => 'SATPOLPP',
-            'sla_hours' => 72,    // 3 hari — SEMENTARA. Lihat catatan bencana.
+            'sla_hours' => 72,    // 3 hari â€” SEMENTARA. Lihat catatan bencana.
         ],
         [
             'code' => 'perhubungan',
@@ -61,8 +61,8 @@ return [
             'hint' => 'Rambu roboh, lampu bangjo eror, marka pudar, parkir liar, truk ODOL, angkutan sekolah, PJU',
             'icon_name' => 'traffic-cone',
             'color' => 'orange',
-            'opd_code' => 'DINAS_PERHUBUNGAN',
-            'sla_hours' => 168,   // 7 hari — SEMENTARA
+            'opd_code' => 'DISHUB',
+            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
         ],
         [
             'code' => 'pariwisata',
@@ -71,7 +71,7 @@ return [
             'icon_name' => 'landmark',
             'color' => 'violet',
             'opd_code' => 'DISBUDPARPORA',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
         ],
         [
             'code' => 'pertanian',
@@ -79,8 +79,8 @@ return [
             'hint' => 'Irigasi mampet, pupuk subsidi langka atau di atas HET, serangan hama',
             'icon_name' => 'wheat',
             'color' => 'green',
-            'opd_code' => 'DINAS_PERTANIAN_KET',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'opd_code' => 'DISTANI',
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
         ],
         [
             'code' => 'kesehatan',
@@ -88,8 +88,8 @@ return [
             'hint' => 'Layanan Puskesmas atau Posyandu, stok obat habis, jentik nyamuk, bau limbah ternak',
             'icon_name' => 'stethoscope',
             'color' => 'rose',
-            'opd_code' => 'DINAS_KESEHATAN',
-            'sla_hours' => 168,   // 7 hari — SEMENTARA
+            'opd_code' => 'DINKES',
+            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
         ],
         [
             'code' => 'pendidikan',
@@ -97,8 +97,8 @@ return [
             'hint' => 'Pungutan liar sekolah, atap kelas bocor, bangku atau toilet sekolah rusak',
             'icon_name' => 'graduation-cap',
             'color' => 'indigo',
-            'opd_code' => 'DINAS_PENDIDIKAN',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'opd_code' => 'DINDIK',
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
         ],
         [
             'code' => 'sosial',
@@ -106,8 +106,8 @@ return [
             'hint' => 'Bansos salah sasaran, lansia telantar, warga sebatang kara, disabilitas butuh penanganan',
             'icon_name' => 'heart-handshake',
             'color' => 'teal',
-            'opd_code' => 'DINAS_SOSIAL_PEMBER',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'opd_code' => 'DINSOS',
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
         ],
         [
             'code' => 'tenaga-kerja',
@@ -116,9 +116,9 @@ return [
             'icon_name' => 'briefcase',
             'color' => 'amber',
             'opd_code' => 'DISNAKER',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
             // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
-            // dapat dipotret — lihat migrasi requires_evidence.
+            // dapat dipotret â€” lihat migrasi requires_evidence.
             'requires_evidence' => false,
         ],
         [
@@ -128,7 +128,7 @@ return [
             'icon_name' => 'store',
             'color' => 'yellow',
             'opd_code' => 'PERDAGKUM',
-            'sla_hours' => 168,   // 7 hari — SEMENTARA
+            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
         ],
         [
             'code' => 'pemerintahan',
@@ -137,11 +137,11 @@ return [
             'icon_name' => 'gavel',
             'color' => 'slate',
             'opd_code' => 'INSPEKTORAT',
-            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
             // Laporan di sini TIDAK boleh didisposisi ke OPD yang dilaporkan (#9).
             'is_sensitive' => true,
             // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
-            // dapat dipotret — lihat migrasi requires_evidence.
+            // dapat dipotret â€” lihat migrasi requires_evidence.
             'requires_evidence' => false,
         ],
         [
@@ -150,8 +150,8 @@ return [
             'hint' => 'WiFi publik mati atau lambat, layanan online Pemkab eror, kabel fiber optik semrawut',
             'icon_name' => 'wifi',
             'color' => 'sky',
-            'opd_code' => 'KOMINFO',
-            'sla_hours' => 168,   // 7 hari — SEMENTARA
+            'opd_code' => 'DISKOMINFO',
+            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
         ],
         [
             'code' => 'aspirasi',
@@ -159,8 +159,8 @@ return [
             'hint' => 'Usulan pembangunan, ide untuk daerah, masukan kebijakan',
             'icon_name' => 'message-square',
             'color' => 'fuchsia',
-            'opd_code' => 'BAPPEDA',
-            'sla_hours' => 720,   // 30 hari — SEMENTARA
+            'opd_code' => 'BAPPERIDA',
+            'sla_hours' => 720,   // 30 hari â€” SEMENTARA
             // Aspirasi dijawab dengan tanggapan tertulis; tidak ada pekerjaan
             // fisik yang dapat difoto.
             'requires_evidence' => false,
@@ -192,7 +192,7 @@ return [
     */
     'limits' => [
         // Maksimal laporan per warga per hari (#12). Dikunci pada keycloak_sub,
-        // jadi tetap berlaku untuk laporan anonim — sistem tahu pengirimnya.
+        // jadi tetap berlaku untuk laporan anonim â€” sistem tahu pengirimnya.
         'reports_per_day' => (int) env('ASPIRATIONS_REPORTS_PER_DAY', 5),
 
         // Foto per laporan. Divalidasi di SERVER, bukan hanya di aplikasi.
@@ -220,7 +220,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'storage' => [
-        // MinIO lewat disk S3. Bucket PRIVAT — foto warga memuat wajah, pelat
+        // MinIO lewat disk S3. Bucket PRIVAT â€” foto warga memuat wajah, pelat
         // nomor, dan bagian dalam rumah; bucket public-read berarti siapa pun
         // yang menebak kunci dapat mengunduhnya dan mesin pencari akan
         // mengindeksnya.
@@ -236,7 +236,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'rating' => [
-        // Tanpa penilaian sekian hari → selesai otomatis (#7).
+        // Tanpa penilaian sekian hari â†’ selesai otomatis (#7).
         'auto_close_days' => (int) env('ASPIRATIONS_AUTO_CLOSE_DAYS', 7),
 
         // Nilai <= ini membuka kembali laporan (#6).
@@ -248,7 +248,7 @@ return [
     | Geocoding
     |--------------------------------------------------------------------------
     |
-    | Bawaannya `null` — sistem berjalan penuh TANPA kunci Google. Laporan
+    | Bawaannya `null` â€” sistem berjalan penuh TANPA kunci Google. Laporan
     | tetap masuk dan tetap ditangani; hanya kolom wilayah yang kosong.
     |
     | Dibuat begitu dengan sengaja: sistem yang menuntut kunci pihak ketiga
@@ -260,9 +260,9 @@ return [
     'geocoding' => [
         'provider' => env('ASPIRATIONS_GEOCODER', 'null'),
 
-        // ⚠️ Kunci ini TIDAK PERNAH boleh sampai ke aplikasi ponsel. Kunci
+        // âš ï¸ Kunci ini TIDAK PERNAH boleh sampai ke aplikasi ponsel. Kunci
         // yang tertanam di APK dapat dibongkar dan dipakai orang lain atas
-        // tagihan Pemkab — itulah sebabnya geocoding dikerjakan di server.
+        // tagihan Pemkab â€” itulah sebabnya geocoding dikerjakan di server.
         'google_key' => env('ASPIRATIONS_GOOGLE_MAPS_KEY', ''),
     ],
 
