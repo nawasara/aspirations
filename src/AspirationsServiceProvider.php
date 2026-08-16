@@ -42,6 +42,18 @@ class AspirationsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'nawasara-aspirations');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+
+        // Guarded — view:cache jatuh kalau path komponen tidak ada.
+        if (is_dir(__DIR__.'/../resources/views/components')) {
+            \Illuminate\Support\Facades\Blade::anonymousComponentPath(
+                __DIR__.'/../resources/views/components',
+                'nawasara-aspirations'
+            );
+        }
+
+        $this->registerLivewire();
         $this->registerCitizenRoutes();
         $this->registerStaffRoutes();
         $this->registerSchedule();
@@ -49,6 +61,45 @@ class AspirationsServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/nawasara-aspirations.php' => config_path('nawasara-aspirations.php'),
         ], 'nawasara-aspirations-config');
+    }
+
+    /**
+     * Halaman panel di Nawasara — HANYA konfigurasi dan pemantauan.
+     *
+     * Penanganan laporan (disposisi, tanggapan, verifikasi Kabid) ada di panel
+     * Next.js lewat `api.staff`. Yang di sini adalah hal-hal yang tidak masuk
+     * akal dipindah ke aplikasi lain: mengubah angka kebijakan, mengelola
+     * kategori, dan melihat keadaan laporan secara keseluruhan.
+     */
+    public function registerLivewire(): void
+    {
+        $namespace = 'Nawasara\\Aspirations\\Livewire';
+        $basePath = __DIR__.'/Livewire';
+
+        if (! is_dir($basePath)) {
+            return;
+        }
+
+        $finder = new \Symfony\Component\Finder\Finder;
+        $finder->files()->in($basePath)->name('*.php');
+
+        foreach ($finder as $file) {
+            $relativePath = str_replace('/', '\\', $file->getRelativePathname());
+            $class = $namespace.'\\'.\Illuminate\Support\Str::beforeLast($relativePath, '.php');
+
+            if (class_exists($class)) {
+                $alias = 'nawasara-aspirations.'.
+                    \Illuminate\Support\Str::of($relativePath)
+                        ->replace('.php', '')
+                        ->replace('\\', '.')
+                        ->replace('/', '.')
+                        ->explode('.')
+                        ->map(fn ($segment) => \Illuminate\Support\Str::kebab($segment))
+                        ->join('.');
+
+                \Livewire\Livewire::component($alias, $class);
+            }
+        }
     }
 
     /**
