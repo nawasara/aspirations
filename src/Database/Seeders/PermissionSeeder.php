@@ -45,5 +45,55 @@ class PermissionSeeder extends Seeder
         if ($role) {
             $role->givePermissionTo($permissions);
         }
+
+        $this->seedPanelRoles();
+    }
+
+    /**
+     * Peran untuk panel OPD (`go-webpanel`).
+     *
+     * Tanpa keduanya, panel menjawab 403 kepada setiap orang kecuali
+     * `developer` — endpoint staf memeriksa izin Spatie lewat `can()`, bukan
+     * scope API.
+     *
+     * Diawali `lapor-` supaya jelas milik Lapor Bunda dan tidak tertukar dengan
+     * peran OPD milik paket lain yang mungkin menyusul.
+     */
+    protected function seedPanelRoles(): void
+    {
+        $roles = [
+            // Petugas lapangan: mengerjakan laporan, lalu menyerahkannya.
+            //
+            // TIDAK diberi `verify`. Itu bukan sekadar pembagian tugas —
+            // ReportWorkflow menolak siapa pun yang memverifikasi pekerjaannya
+            // sendiri (#16), jadi memberi izin ini hanya menghasilkan tombol
+            // yang selalu gagal saat ditekan.
+            'lapor-opd-operator' => [
+                'aspirations.report.view',
+                'aspirations.report.respond',
+            ],
+
+            // Kabid: memeriksa hasil kerja, lalu menyetujui atau mengembalikan.
+            //
+            // `respond` IKUT diberikan dengan sengaja. Kabid di OPD kecil
+            // sering merangkap menangani laporan sendiri, dan menutup jalan itu
+            // membuat laporan menggantung ketika petugasnya berhalangan.
+            // Aturan #16 tetap menjaga: yang ia kerjakan sendiri tidak dapat ia
+            // setujui sendiri, siapa pun izinnya.
+            'lapor-opd-kabid' => [
+                'aspirations.report.view',
+                'aspirations.report.respond',
+                'aspirations.report.verify',
+            ],
+        ];
+
+        foreach ($roles as $name => $granted) {
+            $role = Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+
+            // `givePermissionTo`, BUKAN `syncPermissions`. Admin dapat menambah
+            // izin lain lewat panel Nawasara, dan sync akan mencabutnya diam-diam
+            // pada setiap deploy.
+            $role->givePermissionTo($granted);
+        }
     }
 }
