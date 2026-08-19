@@ -91,13 +91,59 @@ class CategorySeeder extends Seeder
             ]);
         }
 
-        $withoutOpd = Category::whereNull('opd_id')->count();
+        $this->deactivateMissing();
+
+        $withoutOpd = Category::whereNull('opd_id')->where('is_active', true)->count();
 
         if ($withoutOpd > 0) {
             $this->command?->warn(
                 "  {$withoutOpd} kategori belum punya OPD — disposisi otomatis (#18) tidak dapat berjalan untuk kategori tersebut."
             );
         }
+    }
+
+    /**
+     * Menonaktifkan kategori yang tidak lagi ada di config.
+     *
+     * ⚠️ **Dinonaktifkan, BUKAN dihapus.** Laporan warga menyimpan
+     * `category_id`; menghapus barisnya membuat laporan lama kehilangan
+     * kategorinya, dan riwayat yang sudah ditanggapi OPD ikut rusak.
+     *
+     * Diperlukan sejak daftar kategori disusun ulang per jenis keluhan
+     * (19 Agustus 2026). Tanpa langkah ini, tiga belas kategori lama tetap
+     * aktif berdampingan dengan yang baru — warga melihat dua daftar yang
+     * tumpang tindih, dan tidak ada cara menebak mana yang benar.
+     *
+     * Kategori yang dinonaktifkan tidak lagi dikirim ke aplikasi warga, tetapi
+     * tetap dapat dibaca panel untuk laporan lama.
+     */
+    protected function deactivateMissing(): void
+    {
+        $codes = array_column(
+            (array) config('nawasara-aspirations.categories', []),
+            'code'
+        );
+
+        if ($codes === []) {
+            return;
+        }
+
+        $stale = Category::whereNotIn('code', $codes)
+            ->where('is_active', true)
+            ->get();
+
+        if ($stale->isEmpty()) {
+            return;
+        }
+
+        foreach ($stale as $category) {
+            $category->update(['is_active' => false]);
+        }
+
+        $this->command?->warn(
+            "  {$stale->count()} kategori lama dinonaktifkan (tidak dihapus — laporan lama masih merujuknya): "
+            . $stale->pluck('code')->implode(', ')
+        );
     }
 
     /**

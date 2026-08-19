@@ -29,138 +29,163 @@ return [
     */
     'categories' => [
         [
-            'code' => 'infrastruktur',
-            'name' => 'Infrastruktur',
-            'hint' => 'Jalan berlubang, trotoar lepas, drainase tersumbat, jembatan antar-dusun rusak, akses jalan sekolah berbahaya',
-            'icon_name' => 'construction',
+            'code' => 'jalan',
+            'name' => 'Jalan & Jembatan',
+            'hint' => 'Jalan berlubang, trotoar lepas, median rusak, jembatan antar-dusun putus, akses jalan sekolah berbahaya',
+            'icon_name' => 'route',
             'color' => 'stone',
             'opd_code' => 'DPUPKP',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
-            'code' => 'lingkungan',
-            'name' => 'Lingkungan Hidup',
-            'hint' => 'Sampah menumpuk, pohon rawan tumbang, taman rusak, pembakaran sampah, limbah mencemari',
-            'icon_name' => 'trees',
+            'code' => 'lampu',
+            'name' => 'Penerangan Jalan',
+            'hint' => 'Lampu penerangan jalan umum (PJU) mati, tiang miring, kabel menjuntai',
+            'icon_name' => 'lightbulb',
+            'color' => 'amber',
+            // PJU diampu DISHUB, bukan DPUPKP — ditegaskan URUSAN_DINAS.xlsx.
+            'opd_code' => 'DISHUB',
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
+        ],
+        [
+            'code' => 'sampah',
+            'name' => 'Sampah & Lingkungan',
+            'hint' => 'Sampah menumpuk, TPS terlambat diangkut, limbah mencemari, pohon rawan tumbang, taman kota rusak',
+            'icon_name' => 'trash-2',
             'color' => 'lime',
             'opd_code' => 'DLH',
-            'sla_hours' => 72,    // 3 hari â€” SEMENTARA
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
+        ],
+        [
+            'code' => 'air',
+            'name' => 'Air & Drainase',
+            'hint' => 'Drainase kota tersumbat, selokan permukiman mampet, tanggul jebol, irigasi sawah mampet',
+            'icon_name' => 'droplets',
+            'color' => 'sky',
+            // Terbagi DPUPKP (kota), DLH (permukiman), DISTANI (irigasi sawah).
+            // Disposisi halusnya ditentukan Admin Kabupaten dari titik lokasi.
+            'opd_code' => 'DPUPKP',
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
             'code' => 'ketertiban',
-            'name' => 'Ketertiban',
-            'hint' => 'PKL menghalangi trotoar, iklan ilegal, sarang tawon, ular masuk permukiman, balap liar, sound system berlebih',
+            'name' => 'Ketertiban Umum',
+            'hint' => 'Balap liar, sound horeg, PKL menghalangi trotoar, iklan dipaku di pohon, sarang tawon, ular masuk rumah',
             'icon_name' => 'shield-alert',
             'color' => 'red',
             'opd_code' => 'SATPOLPP',
-            'sla_hours' => 72,    // 3 hari â€” SEMENTARA. Lihat catatan bencana.
+            'sla_hours' => 72,    // 3 hari — SEMENTARA
         ],
         [
-            'code' => 'perhubungan',
-            'name' => 'Perhubungan',
-            'hint' => 'Rambu roboh, lampu bangjo eror, marka pudar, parkir liar, truk ODOL, angkutan sekolah, PJU',
+            'code' => 'lalulintas',
+            'name' => 'Lalu Lintas',
+            'hint' => 'Rambu roboh, bangjo (APILL) eror, marka pudar, parkir liar, truk ODOL',
             'icon_name' => 'traffic-cone',
             'color' => 'orange',
             'opd_code' => 'DISHUB',
-            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
-        ],
-        [
-            'code' => 'pariwisata',
-            'name' => 'Budaya & Pariwisata',
-            'hint' => 'Vandalisme cagar budaya, pungli tiket wisata, fasilitas wisata rusak',
-            'icon_name' => 'landmark',
-            'color' => 'violet',
-            'opd_code' => 'DISBUDPARPORA',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
-        ],
-        [
-            'code' => 'pertanian',
-            'name' => 'Pertanian',
-            'hint' => 'Irigasi mampet, pupuk subsidi langka atau di atas HET, serangan hama',
-            'icon_name' => 'wheat',
-            'color' => 'green',
-            'opd_code' => 'DISTANI',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
             'code' => 'kesehatan',
             'name' => 'Kesehatan',
-            'hint' => 'Layanan Puskesmas atau Posyandu, stok obat habis, jentik nyamuk, bau limbah ternak',
+            'hint' => 'Layanan puskesmas, stok obat habis, sarang jentik nyamuk, bau limbah ternak',
             'icon_name' => 'stethoscope',
             'color' => 'rose',
             'opd_code' => 'DINKES',
-            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
             'code' => 'pendidikan',
             'name' => 'Pendidikan',
-            'hint' => 'Pungutan liar sekolah, atap kelas bocor, bangku atau toilet sekolah rusak',
+            'hint' => 'Pungutan sekolah tak wajar, atap kelas bocor, toilet sekolah rusak',
             'icon_name' => 'graduation-cap',
             'color' => 'indigo',
             'opd_code' => 'DINDIK',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
+        ],
+        [
+            'code' => 'pertanian',
+            'name' => 'Pertanian',
+            'hint' => 'Pupuk subsidi langka atau mahal, serangan hama skala desa',
+            'icon_name' => 'wheat',
+            'color' => 'green',
+            'opd_code' => 'DISTANI',
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
+        ],
+        [
+            'code' => 'wisata',
+            'name' => 'Wisata & Cagar Budaya',
+            'hint' => 'Pungli tiket wisata, vandalisme situs bersejarah, fasilitas wisata rusak',
+            'icon_name' => 'ferris-wheel',
+            'color' => 'purple',
+            'opd_code' => 'DISBUDPARPORA',
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
+        ],
+        [
+            'code' => 'digital',
+            'name' => 'Layanan Digital',
+            'hint' => 'WiFi publik mati, layanan online eror, kabel fiber optic semrawut',
+            'icon_name' => 'router',
+            'color' => 'blue',
+            'opd_code' => 'DISKOMINFO',
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
+        ],
+        [
+            'code' => 'perdagangan',
+            'name' => 'Perdagangan',
+            'hint' => 'Elpiji 3 kg langka atau mahal, sarana pasar rusak',
+            'icon_name' => 'shopping-basket',
+            'color' => 'yellow',
+            'opd_code' => 'PERDAGKUM',
+            'sla_hours' => 168,   // 7 hari — SEMENTARA
+        ],
+        [
+            'code' => 'kerja',
+            'name' => 'Ketenagakerjaan',
+            'hint' => 'Agensi PMI nakal, kasus pekerja migran di luar negeri',
+            'icon_name' => 'hard-hat',
+            'color' => 'slate',
+            'opd_code' => 'DISNAKER',
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
+        ],
+        [
+            'code' => 'pelayanan',
+            'name' => 'Pelayanan Publik',
+            'hint' => 'Dugaan pungli, petugas tidak di tempat, dilayani kasar',
+            'icon_name' => 'landmark',
+            'color' => 'violet',
+            'opd_code' => 'INSPEKTORAT',
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
+            // Laporan pungli menyangkut pihak yang dilaporkan; ditandai
+            // sensitif supaya tidak tampil di peta publik.
+            'is_sensitive' => true,
         ],
         [
             'code' => 'sosial',
             'name' => 'Sosial',
-            'hint' => 'Bansos salah sasaran, lansia telantar, warga sebatang kara, disabilitas butuh penanganan',
+            'hint' => 'Bansos salah sasaran, lansia terlantar, warga disabilitas',
             'icon_name' => 'heart-handshake',
             'color' => 'teal',
             'opd_code' => 'DINSOS',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
+            'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
-            'code' => 'tenaga-kerja',
-            'name' => 'Tenaga Kerja',
-            'hint' => 'Aduan perlindungan PMI, agensi nakal, masalah keberangkatan',
-            'icon_name' => 'briefcase',
-            'color' => 'amber',
-            'opd_code' => 'DISNAKER',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
-            // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
-            // dapat dipotret â€” lihat migrasi requires_evidence.
-            'requires_evidence' => false,
-        ],
-        [
-            'code' => 'perdagangan',
-            'name' => 'Perdagangan & UMKM',
-            'hint' => 'Sarana pasar rusak, gas elpiji 3 kg langka atau di atas HET',
-            'icon_name' => 'store',
-            'color' => 'yellow',
-            'opd_code' => 'PERDAGKUM',
-            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
-        ],
-        [
-            'code' => 'pemerintahan',
-            'name' => 'Pemerintahan',
-            'hint' => 'Pungli dan gratifikasi, petugas tidak ada di tempat, pelayanan kasar atau diskriminatif',
-            'icon_name' => 'gavel',
-            'color' => 'slate',
-            'opd_code' => 'INSPEKTORAT',
-            'sla_hours' => 336,   // 14 hari â€” SEMENTARA
-            // Laporan di sini TIDAK boleh didisposisi ke OPD yang dilaporkan (#9).
-            'is_sensitive' => true,
-            // Hasilnya berkas pemeriksaan/pendampingan, bukan sesuatu yang
-            // dapat dipotret â€” lihat migrasi requires_evidence.
-            'requires_evidence' => false,
-        ],
-        [
-            'code' => 'kominfo',
-            'name' => 'Komunikasi & Informatika',
-            'hint' => 'WiFi publik mati atau lambat, layanan online Pemkab eror, kabel fiber optik semrawut',
-            'icon_name' => 'wifi',
-            'color' => 'sky',
-            'opd_code' => 'DISKOMINFO',
-            'sla_hours' => 168,   // 7 hari â€” SEMENTARA
+            'code' => 'bencana',
+            'name' => 'Bencana',
+            'hint' => 'Pohon sudah tumbang menutup jalan, tanah longsor, banjir, kebakaran',
+            'icon_name' => 'waves',
+            'color' => 'cyan',
+            'opd_code' => 'BPBD',
+            'sla_hours' => 3,     // 3 jam — SEMENTARA
         ],
         [
             'code' => 'aspirasi',
             'name' => 'Aspirasi & Usulan',
-            'hint' => 'Usulan pembangunan, ide untuk daerah, masukan kebijakan',
+            'hint' => 'Usulan pembangunan, masukan kebijakan, ide untuk desa',
             'icon_name' => 'message-square',
             'color' => 'fuchsia',
             'opd_code' => 'BAPPERIDA',
-            'sla_hours' => 720,   // 30 hari â€” SEMENTARA
+            'sla_hours' => 720,   // 30 hari — SEMENTARA
             // Aspirasi dijawab dengan tanggapan tertulis; tidak ada pekerjaan
             // fisik yang dapat difoto.
             'requires_evidence' => false,
