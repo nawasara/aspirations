@@ -44,7 +44,7 @@ return [
             'icon_name' => 'lightbulb',
             'color' => 'amber',
             // PJU diampu DISHUB, bukan DPUPKP — ditegaskan URUSAN_DINAS.xlsx.
-            'opd_code' => 'DISHUB',
+            'opd_code' => 'DINAS_PERHUBUNGAN',
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -82,7 +82,7 @@ return [
             'hint' => 'Rambu roboh, bangjo (APILL) eror, marka pudar, parkir liar, truk ODOL',
             'icon_name' => 'traffic-cone',
             'color' => 'orange',
-            'opd_code' => 'DISHUB',
+            'opd_code' => 'DINAS_PERHUBUNGAN',
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -91,7 +91,7 @@ return [
             'hint' => 'Layanan puskesmas, stok obat habis, sarang jentik nyamuk, bau limbah ternak',
             'icon_name' => 'stethoscope',
             'color' => 'rose',
-            'opd_code' => 'DINKES',
+            'opd_code' => 'DINAS_KESEHATAN',
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -100,7 +100,7 @@ return [
             'hint' => 'Pungutan sekolah tak wajar, atap kelas bocor, toilet sekolah rusak',
             'icon_name' => 'graduation-cap',
             'color' => 'indigo',
-            'opd_code' => 'DINDIK',
+            'opd_code' => 'DINAS_PENDIDIKAN',
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
@@ -109,7 +109,7 @@ return [
             'hint' => 'Pupuk subsidi langka atau mahal, serangan hama skala desa',
             'icon_name' => 'wheat',
             'color' => 'green',
-            'opd_code' => 'DISTANI',
+            'opd_code' => 'DINAS_PERTANIAN_KET',
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
@@ -127,7 +127,7 @@ return [
             'hint' => 'WiFi publik mati, layanan online eror, kabel fiber optic semrawut',
             'icon_name' => 'router',
             'color' => 'blue',
-            'opd_code' => 'DISKOMINFO',
+            'opd_code' => 'KOMINFO',
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -166,7 +166,7 @@ return [
             'hint' => 'Bansos salah sasaran, lansia terlantar, warga disabilitas',
             'icon_name' => 'heart-handshake',
             'color' => 'teal',
-            'opd_code' => 'DINSOS',
+            'opd_code' => 'DINAS_SOSIAL_PEMBER',
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
@@ -175,6 +175,11 @@ return [
             'hint' => 'Pohon sudah tumbang menutup jalan, tanah longsor, banjir, kebakaran',
             'icon_name' => 'waves',
             'color' => 'cyan',
+            // ⚠️ BPBD BELUM TERDAFTAR di registry (diperiksa 19 Agustus
+            // 2026). Kategori ini tetap dibuat, tetapi opd_id-nya NULL dan
+            // laporan bencana TIDAK dapat didisposisi otomatis — padahal
+            // justru kategori inilah yang paling menuntut kecepatan (SLA 3
+            // jam). Daftarkan BPBD di registry, lalu seed ulang.
             'opd_code' => 'BPBD',
             'sla_hours' => 3,     // 3 jam — SEMENTARA
         ],
@@ -184,7 +189,7 @@ return [
             'hint' => 'Usulan pembangunan, masukan kebijakan, ide untuk desa',
             'icon_name' => 'message-square',
             'color' => 'fuchsia',
-            'opd_code' => 'BAPPERIDA',
+            'opd_code' => 'BAPPEDA',
             'sla_hours' => 720,   // 30 hari — SEMENTARA
             // Aspirasi dijawab dengan tanggapan tertulis; tidak ada pekerjaan
             // fisik yang dapat difoto.
