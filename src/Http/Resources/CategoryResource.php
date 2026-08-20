@@ -38,6 +38,15 @@ class CategoryResource extends JsonResource
             // padahal itu aturan otorisasi milik server (#18).
             'opd_name' => $this->whenLoaded('opd', fn () => $this->opd?->name),
 
+            // Kode singkat untuk ruang sempit — daftar kategori di ponsel
+            // hanya punya satu baris untuk ini, dan nama resmi panjangnya
+            // ("DINAS PEKERJAAN UMUM, PERUMAHAN, DAN KAWASAN PERMUKIMAN")
+            // terpotong sebelum bagian yang membedakannya terbaca.
+            //
+            // Aplikasi memilih sendiri mana yang dipakai; keduanya dikirim
+            // supaya panel tetap dapat menampilkan nama resminya utuh.
+            'opd_code' => $this->whenLoaded('opd', fn () => $this->opd?->code),
+
             // Aplikasi & panel perlu tahu di MUKA apakah foto bukti akan
             // diminta saat menutup laporan — supaya petugas tidak baru
             // mengetahuinya setelah menekan tombol selesai.
