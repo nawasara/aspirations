@@ -31,8 +31,9 @@ class CategorySeeder extends Seeder
                 // Dilaporkan, bukan didiamkan: kategori tanpa OPD tidak dapat
                 // didisposisi otomatis, dan laporan padanya akan berhenti di
                 // pintu masuk. Lebih baik ketahuan saat seed.
+                $tried = implode(', ', (array) ($data['opd_code'] ?? []));
                 $this->command?->warn(
-                    "  Kategori [{$data['code']}]: OPD '{$data['opd_code']}' tidak ditemukan di registry — opd_id dikosongkan."
+                    "  Kategori [{$data['code']}]: OPD '{$tried}' tidak ditemukan di registry — opd_id dikosongkan."
                 );
             }
 
@@ -154,12 +155,28 @@ class CategorySeeder extends Seeder
      * Perempuan dan Perlindungan Anak") dan pencocokan teks akan meleset
      * begitu ada satu koma bergeser.
      */
-    protected function resolveOpd(?string $code): ?int
+    protected function resolveOpd(string|array|null $code): ?int
     {
-        if ($code === null || $code === '') {
+        if ($code === null || $code === '' || $code === []) {
             return null;
         }
 
-        return \Nawasara\Registry\Models\Opd::where('code', $code)->value('id');
+        // Menerima BEBERAPA kode, dicoba berurutan.
+        //
+        // ⚠️ Registry lokal dan produksi tidak selalu sama. Badan perencanaan
+        // terdaftar sebagai BAPPEDA di satu tempat dan BAPPERIDA di tempat
+        // lain — nomenklaturnya berganti dan registry diisi bertahap. Config
+        // yang menyebut satu kode saja akan menyambung di satu lingkungan dan
+        // menghasilkan kategori tanpa OPD di lingkungan lain, tanpa ada yang
+        // menyadarinya sampai laporan warga berhenti di pintu masuk.
+        foreach ((array) $code as $candidate) {
+            $id = \Nawasara\Registry\Models\Opd::where('code', $candidate)->value('id');
+
+            if ($id !== null) {
+                return $id;
+            }
+        }
+
+        return null;
     }
 }

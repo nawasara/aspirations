@@ -189,7 +189,9 @@ return [
             'hint' => 'Usulan pembangunan, masukan kebijakan, ide untuk desa',
             'icon_name' => 'message-square',
             'color' => 'fuchsia',
-            'opd_code' => 'BAPPEDA',
+            // Registry lokal memakai BAPPEDA, produksi BAPPERIDA — badan yang
+            // sama, nomenklaturnya berganti. Keduanya dicoba berurutan.
+            'opd_code' => ['BAPPERIDA', 'BAPPEDA'],
             'sla_hours' => 720,   // 30 hari — SEMENTARA
             // Aspirasi dijawab dengan tanggapan tertulis; tidak ada pekerjaan
             // fisik yang dapat difoto.
