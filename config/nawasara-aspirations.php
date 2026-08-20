@@ -44,7 +44,7 @@ return [
             'icon_name' => 'lightbulb',
             'color' => 'amber',
             // PJU diampu DISHUB, bukan DPUPKP — ditegaskan URUSAN_DINAS.xlsx.
-            'opd_code' => 'DINAS_PERHUBUNGAN',
+            'opd_code' => ['DISHUB', 'DINAS_PERHUBUNGAN'],
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -82,7 +82,7 @@ return [
             'hint' => 'Rambu roboh, bangjo (APILL) eror, marka pudar, parkir liar, truk ODOL',
             'icon_name' => 'traffic-cone',
             'color' => 'orange',
-            'opd_code' => 'DINAS_PERHUBUNGAN',
+            'opd_code' => ['DISHUB', 'DINAS_PERHUBUNGAN'],
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -91,7 +91,7 @@ return [
             'hint' => 'Layanan puskesmas, stok obat habis, sarang jentik nyamuk, bau limbah ternak',
             'icon_name' => 'stethoscope',
             'color' => 'rose',
-            'opd_code' => 'DINAS_KESEHATAN',
+            'opd_code' => ['DINKES', 'DINAS_KESEHATAN'],
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -100,7 +100,7 @@ return [
             'hint' => 'Pungutan sekolah tak wajar, atap kelas bocor, toilet sekolah rusak',
             'icon_name' => 'graduation-cap',
             'color' => 'indigo',
-            'opd_code' => 'DINAS_PENDIDIKAN',
+            'opd_code' => ['DINDIK', 'DINAS_PENDIDIKAN'],
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
@@ -109,7 +109,7 @@ return [
             'hint' => 'Pupuk subsidi langka atau mahal, serangan hama skala desa',
             'icon_name' => 'wheat',
             'color' => 'green',
-            'opd_code' => 'DINAS_PERTANIAN_KET',
+            'opd_code' => ['DISTANI', 'DINAS_PERTANIAN_KET'],
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
@@ -127,7 +127,7 @@ return [
             'hint' => 'WiFi publik mati, layanan online eror, kabel fiber optic semrawut',
             'icon_name' => 'router',
             'color' => 'blue',
-            'opd_code' => 'KOMINFO',
+            'opd_code' => ['DISKOMINFO', 'KOMINFO'],
             'sla_hours' => 168,   // 7 hari — SEMENTARA
         ],
         [
@@ -166,7 +166,7 @@ return [
             'hint' => 'Bansos salah sasaran, lansia terlantar, warga disabilitas',
             'icon_name' => 'heart-handshake',
             'color' => 'teal',
-            'opd_code' => 'DINAS_SOSIAL_PEMBER',
+            'opd_code' => ['DINSOS', 'DINAS_SOSIAL_PEMBER'],
             'sla_hours' => 336,   // 14 hari — SEMENTARA
         ],
         [
