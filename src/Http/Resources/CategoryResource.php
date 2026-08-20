@@ -16,6 +16,23 @@ class CategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            // ⚠️ WAJIB dikirim: `POST /reports` menuntut `category_id` berupa
+            // UUID yang ada di tabel ini, dan aplikasi tidak punya cara lain
+            // memperolehnya.
+            //
+            // Sempat sengaja tidak dikirim dengan alasan `code` sudah cukup
+            // sebagai pengenal — dan memang cukup untuk MENAMPILKAN kategori,
+            // tetapi tidak untuk mengirim laporan. Akibatnya setiap laporan
+            // warga ditolak "The category id field must be a valid UUID",
+            // dan itu baru ketahuan setelah alur pelaporan selesai dibangun
+            // (dilaporkan 20 Agustus 2026 dari perangkat).
+            //
+            // Berbeda dari `opd_id` yang memang ditahan (#18): itu menyangkut
+            // tujuan disposisi, yang tidak boleh ikut ditentukan aplikasi.
+            // Kategori dipilih warga sendiri, jadi tidak ada yang dijaga
+            // dengan menyembunyikan idnya.
+            'id' => $this->id,
+
             // Kunci pemetaan ikon di Flutter — stabil selamanya.
             'code' => $this->code,
             'name' => $this->name,
