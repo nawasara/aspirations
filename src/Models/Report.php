@@ -108,6 +108,29 @@ class Report extends Model
         return ['developer', 'inspektorat', 'pengawas-sla', 'admin-kabupaten'];
     }
 
+    /**
+     * Kecamatan hasil pencocokan koordinat.
+     *
+     * Terpisah dari kolom `district` yang berisi nama dari geocoding Google —
+     * yang di produksi kosong pada seluruh laporan. Lihat catatan pada
+     * migrasi `add_district_code_to_aspirations_reports`.
+     */
+    public function districtRef(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'district_code', 'code');
+    }
+
+    /**
+     * Nama kecamatan yang dapat dipercaya.
+     *
+     * Mengutamakan master wilayah, dan jatuh ke hasil geocoding bila laporan
+     * belum tercocokkan — laporan lama yang masuk sebelum pencocokan ada.
+     */
+    public function getDistrictNameAttribute(): ?string
+    {
+        return $this->districtRef?->name ?? $this->district;
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');

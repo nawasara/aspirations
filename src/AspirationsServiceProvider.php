@@ -54,6 +54,7 @@ class AspirationsServiceProvider extends ServiceProvider
         }
 
         $this->registerLivewire();
+        $this->registerPublicRoutes();
         $this->registerCitizenRoutes();
         $this->registerStaffRoutes();
         $this->registerSchedule();
@@ -111,6 +112,15 @@ class AspirationsServiceProvider extends ServiceProvider
      */
     protected function registerSchedule(): void
     {
+        // Command dijalankan tangan, bukan penjadwal — jadi mendaftarkannya
+        // lewat commands() aman di sini. (Untuk JADWAL, pola paket ini tetap
+        // $schedule->call(); lihat catatan pada blok penjadwal di bawah.)
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Nawasara\Aspirations\Console\BackfillDistrictsCommand::class,
+            ]);
+        }
+
         $this->app->booted(function () {
             if (! $this->app->runningInConsole()) {
                 return;
@@ -188,5 +198,31 @@ class AspirationsServiceProvider extends ServiceProvider
             ->middleware(['api', 'api.citizen', 'throttle:nawasara-citizen'])
             ->name('nawasara-aspirations.citizen.')
             ->group(__DIR__.'/../routes/citizen.php');
+    }
+
+    /**
+     * Rute TERBUKA — tanpa akun sama sekali.
+     *
+     * Hanya peta laporan yang ada di sini, dan itu keputusan sadar: peta
+     * adalah informasi publik yang manfaatnya justru berkurang bila hanya
+     * terlihat pemilik akun. Menambahkan endpoint lain ke berkas ini berarti
+     * membuka data warga ke internet — jangan lakukan tanpa memeriksa ulang
+     * apa yang keluar dari Resource-nya.
+     *
+     * ⚠️ Pembatasan per-IP, bukan per-`sub`. Tanpa akun tidak ada identitas
+     * untuk dikunci, jadi IP adalah satu-satunya pegangan — meski ia
+     * menghukum warga yang berbagi IP operator. Batasnya karena itu dibuat
+     * longgar: menahan pengambilan massal, bukan pemakaian wajar.
+     *
+     * Daftarnya sendiri murah — hitungan teragregat, bukan baris laporan.
+     */
+    protected function registerPublicRoutes(): void
+    {
+        $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/aspirations';
+
+        \Illuminate\Support\Facades\Route::prefix($prefix)
+            ->middleware(['api', 'throttle:120,1'])
+            ->name('nawasara-aspirations.public.')
+            ->group(__DIR__.'/../routes/public.php');
     }
 }
