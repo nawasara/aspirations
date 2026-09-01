@@ -119,6 +119,33 @@ rather than on the phone.
 
 ## API
 
+### Public — no account at all
+
+| Method | Path |
+|---|---|
+| `GET` | `/api/v1/aspirations/reports/map` |
+
+The only aspirations endpoint that is open without a token. Two shapes: a
+per-district tally, or the reports inside one district.
+
+Pass `lat` + `lng` (and optionally `radius`, default 5000 m) and each report
+also carries `distance_meters` — for the app's "reports near you" panel.
+
+⚠️ **Report coordinates are never returned, and the distance is rounded on
+purpose.** Exact distances taken from three positions are enough to
+trilaterate the report's location back — which is the very thing withholding
+the coordinates protects. Rounding leaves a circle instead of a point: 50 m
+steps below 100 m, 10 m above. Close range is rounded *more* coarsely, not
+less, because that is where a small circle nearly names a single house.
+
+Reports without coordinates stay in the list with `distance_meters: null`
+rather than being dropped — most older reports have no point, and hiding them
+would make the panel look empty when it is not.
+
+Privacy filtering for this endpoint lives in one place, `Services\PublicMap`.
+Sensitive categories, flagged reports, reporter names, descriptions, and
+photos never appear here.
+
 ### Citizen — behind `api.citizen`
 
 | Method | Path |

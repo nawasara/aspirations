@@ -5,6 +5,7 @@ namespace Nawasara\Aspirations\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Services\PublicMap;
 
 /**
  * Laporan sebagaimana terlihat ORANG LAIN — bukan pelapornya.
@@ -22,7 +23,10 @@ use Nawasara\Aspirations\Models\Report;
  *                   kendaraan. Judul cukup untuk peta.
  *   photos          Foto memuat wajah, pelat nomor, dan bagian dalam rumah.
  *   koordinat persis Titik laporan menunjuk ke rumah seseorang. Yang keluar
- *                   hanya nama kecamatan.
+ *                   hanya nama kecamatan — dan, bila warga mengirim posisinya,
+ *                   JARAK yang sudah dibulatkan. Jarak tidak dapat dipakai
+ *                   menemukan rumah siapa pun: lingkaran berjari-jari 240 m
+ *                   memuat ratusan bangunan.
  *
  * Aplikasi sudah memutuskan tidak menampilkan keempatnya. Tidak
  * mengirimkannya membuat keputusan itu tidak dapat dibatalkan oleh perubahan
@@ -52,6 +56,26 @@ class PublicReportResource extends JsonResource
             'support_count' => (int) $this->support_count,
 
             'submitted_at' => $this->received_at?->toIso8601String(),
+
+            // Hanya ada bila permintaan menyertakan posisi warga — pada
+            // jawaban biasa kunci ini tidak muncul sama sekali, sehingga
+            // bentuk lama tidak berubah bagi yang sudah memakainya.
+            //
+            // Bila diminta, ia SELALU ADA meski isinya `null`. Laporan tanpa
+            // koordinat tetap membawa kuncinya, bukan menghilangkannya:
+            // aplikasi membaca kolom ini sebagai nullable, dan kunci yang
+            // kadang ada kadang tidak jauh lebih mudah membuatnya galat
+            // daripada nilai kosong yang jujur.
+            //
+            // Nilainya SUDAH DIBULATKAN — jarak setepat meter dari beberapa
+            // posisi dapat dipakai menghitung balik koordinat laporan.
+            $this->mergeWhen($request->filled(['lat', 'lng']), fn () => [
+                'distance_meters' => PublicMap::roundDistance(
+                    isset($this->resource->distance_meters)
+                        ? (float) $this->resource->distance_meters
+                        : null
+                ),
+            ]),
 
             // Sengaja hanya nama wilayah. `village` berasal dari geocoding dan
             // boleh kosong — itu wajar, dan aplikasi menuliskannya nullable.

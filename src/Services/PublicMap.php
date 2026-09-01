@@ -58,7 +58,7 @@ class PublicMap
     {
         $rows = $this->applyFilters($this->visible(), $filters)
             ->selectRaw('district_code, COUNT(*) as total')
-            ->selectRaw("SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as resolved", [Report::STATUS_RESOLVED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as resolved', [Report::STATUS_RESOLVED])
             ->groupBy('district_code')
             ->get()
             ->keyBy('district_code');
@@ -104,6 +104,87 @@ class PublicMap
             ->with(['category', 'opd'])
             ->latest('received_at')
             ->paginate(20);
+    }
+
+    /**
+     * Laporan terdekat dari posisi warga — panel "Laporan di sekitar Anda".
+     *
+     * ⚠️ Koordinat laporan TIDAK PERNAH ikut keluar. Yang dikirim hanya jarak
+     * yang sudah dibulatkan, dan pembulatan itu pengaman, bukan kerapian:
+     * jarak yang tepat dari tiga posisi berbeda dapat dipakai menghitung balik
+     * titik laporan (trilaterasi) — persis yang hendak dilindungi dengan tidak
+     * mengirimkan koordinatnya. Lihat [self::roundDistance].
+     *
+     * Laporan tanpa koordinat sengaja tetap ikut, dengan jarak `null`. Sebagian
+     * besar laporan lama tidak punya titik, dan membuangnya membuat panel ini
+     * terlihat kosong padahal datanya ada.
+     *
+     * @param  array<string,mixed>  $filters  category, status
+     */
+    public function reportsNear(
+        float $latitude,
+        float $longitude,
+        ?int $radiusMeters = null,
+        array $filters = []
+    ): LengthAwarePaginator {
+        $query = $this->applyFilters($this->visible(), $filters)
+            ->with(['category', 'opd']);
+
+        // Haversine, dihitung di basis data supaya pengurutan dan penyaringan
+        // radius terjadi SEBELUM paginasi. Menghitungnya di PHP berarti
+        // menarik seluruh laporan lebih dulu, lalu mengurutkan sebagian kecil
+        // saja — dan halaman kedua akan berisi data yang salah.
+        $haversine = '(6371000 * ACOS(LEAST(1.0, GREATEST(-1.0,'
+            .' COS(RADIANS(?)) * COS(RADIANS(latitude))'
+            .' * COS(RADIANS(longitude) - RADIANS(?))'
+            .' + SIN(RADIANS(?)) * SIN(RADIANS(latitude))'
+            .'))))';
+
+        $query->selectRaw("*, CASE WHEN latitude IS NULL OR longitude IS NULL THEN NULL ELSE {$haversine} END AS distance_meters",
+            [$latitude, $longitude, $latitude]);
+
+        if ($radiusMeters !== null) {
+            // Laporan tanpa koordinat tetap lolos: radius menyaring yang
+            // diketahui jauh, bukan yang tidak diketahui letaknya.
+            $query->where(function ($q) use ($haversine, $latitude, $longitude, $radiusMeters) {
+                $q->whereNull('latitude')
+                    ->orWhereNull('longitude')
+                    ->orWhereRaw("{$haversine} <= ?", [$latitude, $longitude, $latitude, $radiusMeters]);
+            });
+        }
+
+        // Yang punya jarak lebih dulu, terdekat di atas — itu yang dicari warga
+        // saat membuka panel ini. Yang tanpa koordinat jatuh ke bawah, urut
+        // terbaru, bukan tercampur acak di tengah daftar.
+        return $query
+            ->orderByRaw('distance_meters IS NULL')
+            ->orderByRaw('distance_meters ASC')
+            ->latest('received_at')
+            ->paginate(20);
+    }
+
+    /**
+     * Bulatkan jarak sebelum dikirim — PENGAMAN, bukan kerapian.
+     *
+     * Jarak setepat meter dari beberapa posisi berbeda cukup untuk menghitung
+     * balik koordinat laporan. Pembulatan membuat jawabannya sengaja kabur:
+     * yang tersisa adalah lingkaran, bukan titik.
+     *
+     * Di bawah 100 m dibulatkan ke 50 m — justru jarak dekat yang paling
+     * berbahaya, sebab di situ satu lingkaran kecil sudah hampir menunjuk satu
+     * rumah. Selebihnya ke puluhan meter.
+     */
+    public static function roundDistance(?float $meters): ?int
+    {
+        if ($meters === null) {
+            return null;
+        }
+
+        if ($meters < 100) {
+            return (int) (round($meters / 50) * 50);
+        }
+
+        return (int) (round($meters / 10) * 10);
     }
 
     /**
