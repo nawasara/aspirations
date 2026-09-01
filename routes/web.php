@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Nawasara\Aspirations\Livewire\Category\Index as CategoryIndex;
 use Nawasara\Aspirations\Livewire\Dashboard\Index as DashboardIndex;
+use Nawasara\Aspirations\Livewire\Report\Detail as ReportDetail;
 use Nawasara\Aspirations\Livewire\Report\Index as ReportIndex;
 use Nawasara\Aspirations\Livewire\Settings\Index as SettingsIndex;
 use Spatie\Permission\Middleware\PermissionMiddleware;
@@ -29,6 +30,13 @@ Route::middleware(['web', 'auth'])->prefix('nawasara-aspirations')->group(functi
     Route::get('reports', ReportIndex::class)
         ->middleware(PermissionMiddleware::using('aspirations.report.view'))
         ->name('nawasara-aspirations.reports');
+
+    // Detail dicari lewat KODE, bukan id berurutan: kode itu yang dipegang
+    // warga dan disebut di percakapan, dan id berurutan di URL mengundang
+    // orang menebak laporan milik orang lain.
+    Route::get('reports/{code}', ReportDetail::class)
+        ->middleware(PermissionMiddleware::using('aspirations.report.view'))
+        ->name('nawasara-aspirations.reports.detail');
 
     Route::get('categories', CategoryIndex::class)
         ->middleware(PermissionMiddleware::using('aspirations.category.view'))

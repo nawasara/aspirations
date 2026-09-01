@@ -69,8 +69,16 @@
                 <x-slot:table>
                 @foreach ($reports as $report)
                     <tr wire:key="report-{{ $report->code }}">
-                        <td class="px-6 py-4 text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                            {{ $report->code }}
+                        <td class="px-6 py-4 text-sm font-medium">
+                            {{-- Kode laporan jadi tautan ke detailnya: itu
+                                 penanda yang dipegang warga dan disebut di
+                                 percakapan, jadi tempat paling wajar untuk
+                                 diklik. --}}
+                            <a href="{{ route('nawasara-aspirations.reports.detail', $report->code) }}"
+                                wire:navigate
+                                class="text-emerald-700 transition hover:underline dark:text-emerald-400">
+                                {{ $report->code }}
+                            </a>
                         </td>
 
                         <td class="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-200">
