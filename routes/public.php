@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Nawasara\Aspirations\Http\Api\PublicMapController;
+use Nawasara\Aspirations\Http\Api\RegionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,3 +26,17 @@ use Nawasara\Aspirations\Http\Api\PublicMapController;
 */
 
 Route::get('/reports/map', PublicMapController::class)->name('reports.map');
+
+/*
+ * Daftar kecamatan untuk pilihan alamat.
+ *
+ * Terbuka karena warga mengisi alamatnya justru SAAT PERTAMA MENDAFTAR —
+ * ketika ia belum punya token. Menuntut token di sini berarti daftar
+ * pilihannya kosong tepat pada saat paling dibutuhkan, dan warga kembali
+ * mengetik bebas.
+ *
+ * Isinya nama dan kode kecamatan yang sudah ditetapkan Kemendagri; tidak ada
+ * apa pun di sini yang menyangkut seseorang.
+ */
+Route::get('/regions/districts', [RegionController::class, 'districts'])
+    ->name('regions.districts');
