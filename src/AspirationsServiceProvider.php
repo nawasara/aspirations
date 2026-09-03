@@ -2,13 +2,20 @@
 
 namespace Nawasara\Aspirations;
 
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
+use Livewire\Livewire;
+use Nawasara\Aspirations\Console\BackfillDistrictsCommand;
 use Nawasara\Aspirations\Contracts\GeocodingProvider;
 use Nawasara\Aspirations\Jobs\AutoCloseJob;
 use Nawasara\Aspirations\Jobs\CheckSlaJob;
 use Nawasara\Aspirations\Jobs\CheckVerificationDueJob;
 use Nawasara\Aspirations\Services\Geocoding\GoogleGeocoder;
 use Nawasara\Aspirations\Services\Geocoding\NullGeocoder;
+use Symfony\Component\Finder\Finder;
 
 class AspirationsServiceProvider extends ServiceProvider
 {
@@ -47,7 +54,7 @@ class AspirationsServiceProvider extends ServiceProvider
 
         // Guarded — view:cache jatuh kalau path komponen tidak ada.
         if (is_dir(__DIR__.'/../resources/views/components')) {
-            \Illuminate\Support\Facades\Blade::anonymousComponentPath(
+            Blade::anonymousComponentPath(
                 __DIR__.'/../resources/views/components',
                 'nawasara-aspirations'
             );
@@ -81,24 +88,24 @@ class AspirationsServiceProvider extends ServiceProvider
             return;
         }
 
-        $finder = new \Symfony\Component\Finder\Finder;
+        $finder = new Finder;
         $finder->files()->in($basePath)->name('*.php');
 
         foreach ($finder as $file) {
             $relativePath = str_replace('/', '\\', $file->getRelativePathname());
-            $class = $namespace.'\\'.\Illuminate\Support\Str::beforeLast($relativePath, '.php');
+            $class = $namespace.'\\'.Str::beforeLast($relativePath, '.php');
 
             if (class_exists($class)) {
                 $alias = 'nawasara-aspirations.'.
-                    \Illuminate\Support\Str::of($relativePath)
+                    Str::of($relativePath)
                         ->replace('.php', '')
                         ->replace('\\', '.')
                         ->replace('/', '.')
                         ->explode('.')
-                        ->map(fn ($segment) => \Illuminate\Support\Str::kebab($segment))
+                        ->map(fn ($segment) => Str::kebab($segment))
                         ->join('.');
 
-                \Livewire\Livewire::component($alias, $class);
+                Livewire::component($alias, $class);
             }
         }
     }
@@ -117,7 +124,7 @@ class AspirationsServiceProvider extends ServiceProvider
         // $schedule->call(); lihat catatan pada blok penjadwal di bawah.)
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Nawasara\Aspirations\Console\BackfillDistrictsCommand::class,
+                BackfillDistrictsCommand::class,
             ]);
         }
 
@@ -130,7 +137,7 @@ class AspirationsServiceProvider extends ServiceProvider
                 return;
             }
 
-            $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+            $schedule = $this->app->make(Schedule::class);
 
             // Tiap jam: memeriksa DUA rentang sekaligus (tanggapan pertama dan
             // penyelesaian). Sejam cukup rapat untuk SLA berhari-hari, dan
@@ -171,7 +178,7 @@ class AspirationsServiceProvider extends ServiceProvider
     {
         $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/staff/aspirations';
 
-        \Illuminate\Support\Facades\Route::prefix($prefix)
+        Route::prefix($prefix)
             ->middleware(['api', 'api.staff'])
             ->name('nawasara-aspirations.staff.')
             ->group(__DIR__.'/../routes/staff.php');
@@ -194,7 +201,7 @@ class AspirationsServiceProvider extends ServiceProvider
     {
         $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/aspirations';
 
-        \Illuminate\Support\Facades\Route::prefix($prefix)
+        Route::prefix($prefix)
             ->middleware(['api', 'api.citizen', 'throttle:nawasara-citizen'])
             ->name('nawasara-aspirations.citizen.')
             ->group(__DIR__.'/../routes/citizen.php');
@@ -220,7 +227,7 @@ class AspirationsServiceProvider extends ServiceProvider
     {
         $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/aspirations';
 
-        \Illuminate\Support\Facades\Route::prefix($prefix)
+        Route::prefix($prefix)
             ->middleware(['api', 'throttle:120,1'])
             ->name('nawasara-aspirations.public.')
             ->group(__DIR__.'/../routes/public.php');

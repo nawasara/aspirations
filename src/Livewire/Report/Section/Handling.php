@@ -7,9 +7,9 @@ namespace Nawasara\Aspirations\Livewire\Report\Section;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Services\ReportWorkflow;
-use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Registry\Support\MembershipResolver;
 
 /**

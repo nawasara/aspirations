@@ -52,6 +52,7 @@ class PublicReportResource extends JsonResource
             ]),
 
             'opd_name' => $this->whenLoaded('opd', fn () => $this->opd?->name),
+            'opd_code' => $this->whenLoaded('opd', fn () => $this->opd?->code),
 
             'support_count' => (int) $this->support_count,
 

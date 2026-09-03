@@ -4,6 +4,7 @@ namespace Nawasara\Aspirations\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Nawasara\Aspirations\Models\Category;
+use Nawasara\Registry\Models\Opd;
 
 /**
  * Isi awal 13 urusan dari config.
@@ -143,7 +144,7 @@ class CategorySeeder extends Seeder
 
         $this->command?->warn(
             "  {$stale->count()} kategori lama dinonaktifkan (tidak dihapus — laporan lama masih merujuknya): "
-            . $stale->pluck('code')->implode(', ')
+            .$stale->pluck('code')->implode(', ')
         );
     }
 
@@ -170,7 +171,7 @@ class CategorySeeder extends Seeder
         // menghasilkan kategori tanpa OPD di lingkungan lain, tanpa ada yang
         // menyadarinya sampai laporan warga berhenti di pintu masuk.
         foreach ((array) $code as $candidate) {
-            $id = \Nawasara\Registry\Models\Opd::where('code', $candidate)->value('id');
+            $id = Opd::where('code', $candidate)->value('id');
 
             if ($id !== null) {
                 return $id;

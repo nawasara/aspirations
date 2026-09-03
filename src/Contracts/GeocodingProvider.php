@@ -25,7 +25,7 @@ interface GeocodingProvider
      * Terjemahkan koordinat.
      *
      * @return array{full_address: string|null, village: string|null, district: string|null}|null
-     *         null bila gagal atau tidak ditemukan.
+     *                                                                                            null bila gagal atau tidak ditemukan.
      */
     public function reverse(float $latitude, float $longitude): ?array;
 }

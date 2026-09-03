@@ -35,6 +35,7 @@ class StaffReportResource extends JsonResource
             ],
 
             'opd_name' => $this->whenLoaded('opd', fn () => $this->opd?->name),
+            'opd_code' => $this->whenLoaded('opd', fn () => $this->opd?->code),
 
             'location' => [
                 'latitude' => $this->latitude !== null ? (float) $this->latitude : null,

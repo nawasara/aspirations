@@ -3,13 +3,14 @@
 namespace Nawasara\Aspirations\Services;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
+use Nawasara\Aspirations\Jobs\GeocodeReportJob;
 use Nawasara\Aspirations\Models\Category;
+use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Support\ReportCode;
-use Nawasara\Aspirations\Jobs\GeocodeReportJob;
-use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Support\Settings;
 
 /**
@@ -277,7 +278,7 @@ class ReportSubmission
      * Dipanggil aplikasi sebelum mengirim, sehingga warga dapat memilih "Saya
      * Juga Mengalami" pada laporan yang sudah ada.
      */
-    public function findSimilar(array $data): \Illuminate\Support\Collection
+    public function findSimilar(array $data): Collection
     {
         if (empty($data['latitude']) || empty($data['longitude'])) {
             return collect();

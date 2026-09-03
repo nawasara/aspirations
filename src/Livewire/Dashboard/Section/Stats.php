@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Registry\Models\Opd;
 
 /**
  * Angka ringkas Lapor Bunda.
@@ -112,7 +113,7 @@ class Stats extends Component
         // Nama OPD diambil terpisah, bukan lewat with(). Baris di atas hasil
         // agregat — bukan model Report utuh — sehingga eager loading relasi
         // padanya tidak dapat diandalkan.
-        $names = \Nawasara\Registry\Models\Opd::whereIn('id', $rows->pluck('opd_id'))
+        $names = Opd::whereIn('id', $rows->pluck('opd_id'))
             ->pluck('name', 'id');
 
         return $rows->map(fn ($row) => [

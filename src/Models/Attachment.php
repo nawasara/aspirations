@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Nawasara\Vault\Services\MinioDisk;
 
 /**
  * Foto laporan warga & foto bukti tindak lanjut.
@@ -29,10 +30,13 @@ class Attachment extends Model
     ];
 
     public const KIND_REPORT = 'report';
+
     public const KIND_EVIDENCE = 'evidence';
 
     public const SOURCE_CAMERA = 'camera';
+
     public const SOURCE_GALLERY = 'gallery';
+
     public const SOURCE_UNKNOWN = 'unknown';
 
     public function report(): BelongsTo
@@ -55,8 +59,8 @@ class Attachment extends Model
             // config. Bila bucket pernah diganti, foto lama tetap harus terbaca
             // dari tempat ia benar-benar disimpan.
             $disk = ($this->disk === 'minio' && $this->bucket
-                && class_exists(\Nawasara\Vault\Services\MinioDisk::class))
-                    ? \Nawasara\Vault\Services\MinioDisk::make($this->bucket)
+                && class_exists(MinioDisk::class))
+                    ? MinioDisk::make($this->bucket)
                     : Storage::disk($this->disk);
 
             return $disk->temporaryUrl($this->path, now()->addSeconds($ttl));

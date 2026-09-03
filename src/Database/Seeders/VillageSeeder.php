@@ -3,6 +3,7 @@
 namespace Nawasara\Aspirations\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Models\Village;
 
 /**
@@ -26,7 +27,7 @@ class VillageSeeder extends Seeder
     {
         $rows = require dirname(__DIR__, 3).'/database/seeders/ponorogo-villages.php';
 
-        $districts = \Nawasara\Aspirations\Models\District::pluck('code')->flip();
+        $districts = District::pluck('code')->flip();
 
         if ($districts->isEmpty()) {
             $this->command?->error('  Kecamatan belum ada — jalankan DistrictSeeder lebih dulu.');

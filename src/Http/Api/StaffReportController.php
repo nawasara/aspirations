@@ -5,10 +5,10 @@ namespace Nawasara\Aspirations\Http\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Http\Resources\StaffReportResource;
 use Nawasara\Aspirations\Models\Report;
-use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Models\Response;
 use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\ReportWorkflow;
@@ -56,7 +56,7 @@ class StaffReportController extends Controller
             ->when($data['overdue'] ?? null, fn ($q) => $q->overdue())
             ->when($data['q'] ?? null, fn ($q, $search) => $q->where(function ($x) use ($search) {
                 $x->where('code', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%");
+                    ->orWhere('title', 'like', "%{$search}%");
             }))
             // Tenggat terdekat di atas: yang paling genting terlihat lebih dulu,
             // tanpa petugas harus memilih urutan.
@@ -93,7 +93,7 @@ class StaffReportController extends Controller
         $report = Report::query()
             ->where('code', $code)
             ->with(['category', 'opd', 'responder', 'verifier', 'attachments',
-                    'responses' => fn ($q) => $q->with('user')])
+                'responses' => fn ($q) => $q->with('user')])
             ->first();
 
         // Global scope sudah menyaring OPD lain, jadi laporan milik dinas lain

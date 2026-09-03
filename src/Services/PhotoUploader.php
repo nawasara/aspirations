@@ -2,7 +2,9 @@
 
 namespace Nawasara\Aspirations\Services;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
@@ -10,6 +12,7 @@ use Nawasara\Aspirations\Models\Attachment;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Response;
 use Nawasara\Aspirations\Support\Settings;
+use Nawasara\Vault\Services\MinioDisk;
 
 /**
  * Unggah foto laporan & bukti tindak lanjut ke MinIO.
@@ -62,10 +65,10 @@ class PhotoUploader
      * Disk lain (mis. `local` saat pengujian) tidak mengenal bucket dan
      * dipakai apa adanya.
      */
-    protected function diskFor(string $disk, ?string $bucket): \Illuminate\Contracts\Filesystem\Filesystem
+    protected function diskFor(string $disk, ?string $bucket): Filesystem
     {
-        if ($disk === 'minio' && $bucket !== null && class_exists(\Nawasara\Vault\Services\MinioDisk::class)) {
-            return \Nawasara\Vault\Services\MinioDisk::make($bucket);
+        if ($disk === 'minio' && $bucket !== null && class_exists(MinioDisk::class)) {
+            return MinioDisk::make($bucket);
         }
 
         return Storage::disk($disk);
@@ -208,10 +211,10 @@ class PhotoUploader
     }
 
     /** EXIF memakai "2026:08:15 10:30:00" — bukan format yang dikenal Carbon. */
-    protected function parseExifTime(string $value): ?\Illuminate\Support\Carbon
+    protected function parseExifTime(string $value): ?Carbon
     {
         try {
-            return \Illuminate\Support\Carbon::createFromFormat('Y:m:d H:i:s', $value);
+            return Carbon::createFromFormat('Y:m:d H:i:s', $value);
         } catch (\Throwable) {
             return null;
         }

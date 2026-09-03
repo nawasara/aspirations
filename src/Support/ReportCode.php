@@ -2,7 +2,6 @@
 
 namespace Nawasara\Aspirations\Support;
 
-use Illuminate\Support\Facades\DB;
 use Nawasara\Aspirations\Models\Report;
 
 /**

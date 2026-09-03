@@ -159,16 +159,13 @@ class ReportNotifier
         $opd = $report->opd?->name ?? 'perangkat daerah terkait';
 
         return match ($status) {
-            Report::STATUS_IN_PROGRESS =>
-                "Laporan {$report->code} sedang ditangani oleh {$opd}.",
+            Report::STATUS_IN_PROGRESS => "Laporan {$report->code} sedang ditangani oleh {$opd}.",
 
-            Report::STATUS_RESOLVED =>
-                "Laporan {$report->code} telah dinyatakan selesai oleh {$opd}. "
-                ."Mohon beri penilaian agar kami tahu hasilnya sesuai harapan Anda.",
+            Report::STATUS_RESOLVED => "Laporan {$report->code} telah dinyatakan selesai oleh {$opd}. "
+                .'Mohon beri penilaian agar kami tahu hasilnya sesuai harapan Anda.',
 
-            Report::STATUS_REJECTED =>
-                "Laporan {$report->code} belum dapat diproses. "
-                ."Silakan buka aplikasi untuk membaca alasannya.",
+            Report::STATUS_REJECTED => "Laporan {$report->code} belum dapat diproses. "
+                .'Silakan buka aplikasi untuk membaca alasannya.',
 
             default => "Ada perkembangan pada laporan {$report->code}.",
         };

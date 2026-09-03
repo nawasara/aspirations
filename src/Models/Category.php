@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Nawasara\Registry\Models\Opd;
 
 /**
  * Kategori laporan — 13 urusan, satu tingkat (datar).
@@ -38,7 +39,7 @@ class Category extends Model
 
     public function opd(): BelongsTo
     {
-        return $this->belongsTo(\Nawasara\Registry\Models\Opd::class, 'opd_id');
+        return $this->belongsTo(Opd::class, 'opd_id');
     }
 
     /** Kategori yang ditawarkan ke warga, terurut. */

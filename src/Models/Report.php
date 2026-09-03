@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nawasara\Registry\Concerns\ScopedToOpd;
+use Nawasara\Registry\Models\Opd;
 
 /**
  * Laporan warga — model inti Lapor Bunda.
@@ -82,10 +83,15 @@ class Report extends Model
     //   lalu laporan ditutup; status menggantung membuat laporan tak pernah
     //   tuntas dan tak masuk hitungan siapa pun.
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_DISPATCHED = 'dispatched';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_AWAITING_VERIFICATION = 'awaiting_verification';
+
     public const STATUS_RESOLVED = 'resolved';
+
     public const STATUS_REJECTED = 'rejected';
 
     /** Status yang dianggap masih berjalan — dipakai menghitung kepatuhan. */
@@ -138,7 +144,7 @@ class Report extends Model
 
     public function opd(): BelongsTo
     {
-        return $this->belongsTo(\Nawasara\Registry\Models\Opd::class, 'opd_id');
+        return $this->belongsTo(Opd::class, 'opd_id');
     }
 
     public function responses(): HasMany
@@ -279,9 +285,9 @@ class Report extends Model
                 $q->where(fn ($x) => $x->whereNull('first_responded_at')
                     ->whereNotNull('response_due_at')
                     ->where('response_due_at', '<', now()))
-                  ->orWhere(fn ($x) => $x->whereNull('resolution_submitted_at')
-                    ->whereNotNull('sla_due_at')
-                    ->where('sla_due_at', '<', now()));
+                    ->orWhere(fn ($x) => $x->whereNull('resolution_submitted_at')
+                        ->whereNotNull('sla_due_at')
+                        ->where('sla_due_at', '<', now()));
             });
     }
 }

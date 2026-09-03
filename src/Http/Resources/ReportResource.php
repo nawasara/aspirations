@@ -46,7 +46,17 @@ class ReportResource extends JsonResource
                 'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
                 'address' => $this->full_address,
                 'village' => $this->village,
-                'district' => $this->district,
+
+                // Diambil dari master wilayah lebih dulu, baru jatuh ke hasil
+                // geocoding. Kolom `district` kosong pada SELURUH laporan
+                // produksi — geocoder bawaan sistem adalah NullGeocoder, jadi
+                // ia tidak pernah terisi — sementara `district_code` selalu
+                // ada karena dicocokkan dari koordinat saat laporan masuk.
+                //
+                // Jadi namanya memang sudah dapat diketahui tanpa memanggil
+                // layanan peta sama sekali; yang kurang hanyalah membacanya
+                // dari tempat yang benar.
+                'district' => $this->district_name,
             ],
 
             'is_anonymous' => (bool) $this->is_anonymous,
@@ -60,6 +70,17 @@ class ReportResource extends JsonResource
             // supaya aplikasi tidak pernah ikut menentukan tujuan disposisi —
             // itu keputusan server (#18).
             'opd_name' => $this->whenLoaded('opd', fn () => $this->opd?->name),
+            // Singkatan resmi OPD (DPUPKP, Satpol PP, Dispendukcapil) — untuk
+            // kartu daftar, tempat nama panjang memenuhi barisnya lalu
+            // terpotong justru pada bagian yang membedakan: hampir semua
+            // diawali "DINAS ...".
+            //
+            // Dikirim server, BUKAN disingkat aplikasi. Singkatan OPD adalah
+            // nomenklatur resmi, bukan hasil pemenggalan kata — "Satuan Polisi
+            // Pamong Praja" bukan SPPP melainkan Satpol PP. Dan saat OPD ditata
+            // ulang, memperbaikinya di sini adalah satu perubahan; di aplikasi
+            // berarti menunggu seluruh warga memperbarui pemasangannya.
+            'opd_code' => $this->whenLoaded('opd', fn () => $this->opd?->code),
 
             'submitted_at' => $this->received_at?->toIso8601String(),
 
