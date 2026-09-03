@@ -5,6 +5,7 @@ namespace Nawasara\Aspirations\Http\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Nawasara\Aspirations\Models\District;
+use Nawasara\Aspirations\Models\Village;
 
 /**
  * Daftar wilayah untuk pilihan alamat — kecamatan, kelak desa.
@@ -56,6 +57,41 @@ class RegionController
                 // menghemat satu permintaan.
                 'latitude' => $d->latitude !== null ? (float) $d->latitude : null,
                 'longitude' => $d->longitude !== null ? (float) $d->longitude : null,
+            ])->all(),
+        ]);
+    }
+
+    /**
+     * GET /api/v1/aspirations/regions/villages?district=350202
+     *
+     * ⚠️ Disaring per kecamatan, dan `district` WAJIB.
+     *
+     * Ponorogo punya 307 desa; mengirim semuanya sekaligus membuat daftar yang
+     * tidak dapat ditelusuri warga di layar ponsel. Setelah kecamatan dipilih,
+     * sisanya belasan — dan itu yang membuat memilih lebih cepat daripada
+     * mengetik.
+     */
+    public function villages(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'district' => ['required', 'string', 'size:6'],
+        ]);
+
+        $villages = Village::query()
+            ->where('district_code', $data['district'])
+            ->orderBy('name')
+            ->get(['code', 'name', 'is_kelurahan']);
+
+        return response()->json([
+            'data' => $villages->map(fn (Village $v) => [
+                'code' => $v->code,
+                'name' => $v->name,
+
+                // Kelurahan berbeda dari desa: dipimpin lurah, tanpa
+                // pemerintahan desa sendiri. Empat kecamatan memuat keduanya,
+                // jadi aplikasi tidak dapat menyimpulkannya dari kecamatan.
+                'is_kelurahan' => $v->is_kelurahan,
+                'type' => $v->type_label,
             ])->all(),
         ]);
     }

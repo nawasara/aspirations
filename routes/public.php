@@ -40,3 +40,6 @@ Route::get('/reports/map', PublicMapController::class)->name('reports.map');
  */
 Route::get('/regions/districts', [RegionController::class, 'districts'])
     ->name('regions.districts');
+
+Route::get('/regions/villages', [RegionController::class, 'villages'])
+    ->name('regions.villages');

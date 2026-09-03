@@ -33,7 +33,7 @@ class PublicMapController
 
     /**
      * GET /api/v1/aspirations/reports/map
-     * GET /api/v1/aspirations/reports/map?district=3502140
+     * GET /api/v1/aspirations/reports/map?district=350213
      * GET /api/v1/aspirations/reports/map?lat=-7.8686&lng=111.4619&radius=5000
      *
      * Satu endpoint, tiga bentuk jawaban — ditentukan parameternya. Dijadikan

@@ -29,7 +29,9 @@ return new class extends Migration
         Schema::create('nawasara_aspirations_districts', function (Blueprint $table) {
             $table->id();
 
-            // Kode BPS, mis. 3502140. Dipakai aplikasi sebagai `district_code`.
+            // Kode KEMENDAGRI 6 digit, mis. 350214 (Kepmendagri 300.2.2-2138/2025).
+            // Dipakai aplikasi sebagai `district_code`. BUKAN kode BPS — lihat
+            // catatan di DistrictSeeder: keduanya berbeda untuk 11 dari 21 kecamatan.
             $table->string('code', 10)->unique();
 
             $table->string('name', 100);
