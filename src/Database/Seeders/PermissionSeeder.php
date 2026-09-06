@@ -35,6 +35,19 @@ class PermissionSeeder extends Seeder
             // Rekap & dashboard
             'aspirations.report.export',
             'aspirations.dashboard.view',
+
+            // Menetapkan siapa yang boleh memeriksa, DI DALAM OPD sendiri.
+            //
+            // Ada supaya penetapan verifikator tidak harus lewat tim Nawasara
+            // setiap kali ada mutasi atau rotasi jabatan. Ponorogo punya 21
+            // kecamatan dan puluhan OPD; menjadikannya tiket ke tim pusat
+            // berarti laporan menggantung sementara SLA terus berjalan.
+            //
+            // ⚠️ SENGAJA tidak mencakup penautan keanggotaan OPD. Bila admin
+            // OPD dapat menarik pegawai ke dalam OPD-nya, ia sekaligus menarik
+            // seluruh laporan yang terlihat olehnya — persis pintu yang
+            // ditutup rapat oleh sifat fail-closed MembershipResolver.
+            'aspirations.verifier.manage',
         ];
 
         foreach ($permissions as $permission) {

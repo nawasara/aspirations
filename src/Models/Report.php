@@ -127,6 +127,25 @@ class Report extends Model
     }
 
     /**
+     * Kapan perkaranya benar-benar ditutup.
+     *
+     * BUKAN sama dengan `verified_at`. Laporan yang DITOLAK tidak pernah
+     * diverifikasi, sehingga panel yang memakai `verified_at` sebagai penanda
+     * selesai tidak pernah menghitungnya di "selesai bulan ini" — padahal
+     * perkaranya sudah tuntas.
+     *
+     * Null selama laporannya masih berjalan.
+     */
+    public function resolvedAt(): ?\Illuminate\Support\Carbon
+    {
+        return match ($this->status) {
+            self::STATUS_RESOLVED => $this->verified_at ?? $this->updated_at,
+            self::STATUS_REJECTED => $this->updated_at,
+            default => null,
+        };
+    }
+
+    /**
      * Nama kecamatan yang dapat dipercaya.
      *
      * Mengutamakan master wilayah, dan jatuh ke hasil geocoding bila laporan

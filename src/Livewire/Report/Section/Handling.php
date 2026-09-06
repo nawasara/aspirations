@@ -10,7 +10,7 @@ use Livewire\Component;
 use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Services\ReportWorkflow;
-use Nawasara\Registry\Support\MembershipResolver;
+use Nawasara\Aspirations\Services\VerifierDirectory;
 
 /**
  * Penanganan laporan — kerjakan, serahkan ke pemeriksa, setujui, kembalikan.
@@ -55,35 +55,13 @@ class Handling extends Component
     #[Computed]
     public function verifierOptions(): array
     {
-        $user = auth()->user();
-        $userId = (int) $user->getAuthIdentifier();
-
-        $opdId = app(MembershipResolver::class)->opdIdFor($user);
-
-        $seOpd = $opdId === null
-            ? collect()
-            : DB::table('nawasara_registry_memberships')
-                ->where('opd_id', $opdId)
-                ->where('user_id', '!=', $userId)
-                ->distinct()
-                ->pluck('user_id');
-
-        // Pengguna tanpa keanggotaan — sah menurut aturan #25 selama data
-        // registry belum lengkap.
-        $tanpaOpd = DB::table('users')
-            ->whereNotIn('id', DB::table('nawasara_registry_memberships')->pluck('user_id'))
-            ->where('id', '!=', $userId)
-            ->pluck('id');
-
-        $ids = $seOpd->merge($tanpaOpd)->unique();
-
-        if ($ids->isEmpty()) {
-            return [];
-        }
-
-        return DB::table('users')
-            ->whereIn('id', $ids)
-            ->orderBy('name')
+        // Sumbernya SATU dengan panel OPD — lihat VerifierDirectory.
+        //
+        // Sebelumnya logika ini ditulis di sini dan disalin di panel Next.js.
+        // Salinan aturan selalu berakhir sama: satu diperbarui, satunya tidak,
+        // lalu petugas disodori nama yang pasti ditolak saat menyerahkan.
+        return app(VerifierDirectory::class)
+            ->candidatesFor(auth()->user())
             ->pluck('name', 'id')
             ->all();
     }

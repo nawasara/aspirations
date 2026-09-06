@@ -59,6 +59,15 @@ class StaffReportResource extends JsonResource
                 'first_responded_at' => $this->first_responded_at?->toIso8601String(),
                 'due_at' => $this->sla_due_at?->toIso8601String(),
                 'resolution_submitted_at' => $this->resolution_submitted_at?->toIso8601String(),
+
+                // Kapan perkaranya benar-benar DITUTUP — bukan sama dengan
+                // `verified_at`.
+                //
+                // Laporan yang DITOLAK tidak pernah punya `verified_at`,
+                // sehingga panel yang memakainya sebagai penanda selesai tidak
+                // pernah menghitungnya di "selesai bulan ini" meski perkaranya
+                // sudah tuntas.
+                'resolved_at' => $this->resolvedAt()?->toIso8601String(),
                 'verification_due_at' => $this->verification_due_at?->toIso8601String(),
 
                 // Dihitung server, bukan di panel. Dua panel yang menghitung

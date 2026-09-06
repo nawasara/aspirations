@@ -1,7 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Nawasara\Aspirations\Http\Api\StaffDashboardController;
+use Nawasara\Aspirations\Http\Api\StaffOpdMemberController;
 use Nawasara\Aspirations\Http\Api\StaffReportController;
+use Nawasara\Aspirations\Http\Api\StaffVerifierController;
+use Spatie\Permission\Middleware\PermissionMiddleware;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,3 +32,24 @@ Route::post('/reports/{code}/approve', [StaffReportController::class, 'approve']
 Route::post('/reports/{code}/reject', [StaffReportController::class, 'rejectWork'])->name('reports.reject');
 
 Route::post('/reports/{code}/evidence', [StaffReportController::class, 'uploadEvidence'])->name('reports.evidence');
+
+// Pengelolaan verifikator oleh admin OPD sendiri.
+//
+// Digerbang izin `aspirations.verifier.manage` DAN dibatasi ke OPD pemegangnya
+// oleh MembershipResolver — dua lapis, karena izin saja tidak menyebut OPD mana.
+Route::middleware(PermissionMiddleware::using('aspirations.verifier.manage'))->group(function () {
+    Route::get('/opd/members', [StaffOpdMemberController::class, 'index'])->name('opd.members.index');
+    Route::post('/opd/members/{id}/verifier', [StaffOpdMemberController::class, 'assign'])->name('opd.members.verifier.assign');
+    Route::delete('/opd/members/{id}/verifier', [StaffOpdMemberController::class, 'revoke'])->name('opd.members.verifier.revoke');
+});
+
+// Ringkasan dashboard — satu permintaan, bukan 30.
+Route::get('/dashboard/summary', StaffDashboardController::class)->name('dashboard.summary');
+
+// Calon pemeriksa untuk petugas yang sedang masuk.
+//
+// Menggantikan pemanggilan panel ke `/keycloak/users` yang memakai token
+// STATIS di berkas .env — token yang memberi akses seluruh direktori pegawai,
+// tidak terikat siapa pun, dan tidak dapat dicabut tanpa mematikan fiturnya
+// bagi semua orang.
+Route::get('/verifiers', StaffVerifierController::class)->name('verifiers.index');
