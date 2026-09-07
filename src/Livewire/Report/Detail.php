@@ -31,7 +31,7 @@ class Detail extends Component
         // menghasilkan 404 — bukan halaman kosong yang terbaca seperti data
         // hilang.
         $this->report = Report::query()
-            ->with(['category', 'opd', 'verifier', 'responder'])
+            ->with(['category', 'opd', 'verifier', 'verifiedBy', 'responder', 'districtRef', 'citizen'])
             ->where('code', $code)
             ->firstOrFail();
     }
@@ -46,7 +46,7 @@ class Detail extends Component
     public function reload(): void
     {
         $this->report = Report::query()
-            ->with(['category', 'opd', 'verifier', 'responder'])
+            ->with(['category', 'opd', 'verifier', 'verifiedBy', 'responder', 'districtRef', 'citizen'])
             ->whereKey($this->report->getKey())
             ->firstOrFail();
     }

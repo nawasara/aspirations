@@ -10,7 +10,14 @@
             description="Kategori menentukan OPD tujuan, batas waktu yang dijanjikan, dan kewajiban foto bukti."
             :count="$categories->count()">
             @can('aspirations.category.manage')
-                <x-nawasara-ui::button color="primary" wire:click="create">
+                {{-- Dua penanganan klik sekaligus (§14c AGENTS.md):
+                     x-on:click membuka modalnya SEKARANG lewat Alpine, tanpa
+                     menunggu server; wire:click menyiapkan formnya paralel.
+                     Hanya wire:click saja membuat tombol terasa tidak menekan
+                     selama satu perjalanan ke server. --}}
+                <x-nawasara-ui::button color="primary"
+                    x-on:click="$dispatch('open-modal', { id: 'kategori-form' })"
+                    wire:click="create">
                     Tambah Kategori
                 </x-nawasara-ui::button>
             @endcan
@@ -83,6 +90,7 @@
                                 <div class="flex justify-end gap-1">
                                     <x-nawasara-ui::icon-button
                                         icon="pencil" tooltip="Ubah" placement="left"
+                                        x-on:click="$dispatch('open-modal', { id: 'kategori-form' })"
                                         wire:click="edit('{{ $category->id }}')" />
                                     <x-nawasara-ui::icon-button
                                         :icon="$category->is_active ? 'eye-off' : 'eye'"
@@ -98,14 +106,19 @@
             </x-nawasara-ui::table>
         @endif
 
-        {{-- Form tambah / ubah --}}
-        @if ($showForm)
-            <x-nawasara-ui::page.card class="mt-6">
-                <h3 class="text-base font-semibold text-neutral-800 dark:text-neutral-100">
-                    {{ $editingId ? 'Ubah Kategori' : 'Tambah Kategori' }}
-                </h3>
+        {{-- Form tambah / ubah — MODAL, bukan kartu di bawah tabel.
+             Sebelumnya form ini dirender sebagai kartu setelah tabel, jadi
+             menekan "Tambah Kategori" membuka sesuatu yang berada di luar
+             layar: dari sudut pandang staf, tombolnya tidak melakukan apa pun.
+             Judulnya dipegang komponen modal, jadi <h3> di sini dibuang supaya
+             tidak tampil dua kali. --}}
+        <x-nawasara-ui::modal
+            id="kategori-form"
+            :title="$editingId ? 'Ubah Kategori' : 'Tambah Kategori'"
+            subtitle="Kategori menentukan OPD tujuan dan batas waktu yang dijanjikan ke warga."
+            maxWidth="2xl">
 
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
                     <div><x-nawasara-ui::form.input label="Nama Kategori" wire:model="name" /></div>
                     <div>
                         <x-nawasara-ui::form.input label="Kode" wire:model="code" />
@@ -161,13 +174,18 @@
                         label="Aktif — tampil di aplikasi warga" />
                 </div>
 
-                <div class="mt-6 flex gap-2">
-                    <x-nawasara-ui::button color="primary" wire:click="save">Simpan</x-nawasara-ui::button>
-                    <x-nawasara-ui::button color="neutral" wire:click="$set('showForm', false)">
-                        Batal
-                    </x-nawasara-ui::button>
-                </div>
-            </x-nawasara-ui::page.card>
-        @endif
+            {{-- ⚠️ Slot footer dirender DI LUAR div konten, sehingga tombol di
+                 sini berada di luar <form> — wire:submit tidak akan pernah
+                 menyala. Karena itu Simpan memakai wire:click. --}}
+            <x-slot:footer>
+                <x-nawasara-ui::button color="neutral"
+                    x-on:click="$dispatch('close-modal', 'kategori-form')">
+                    Batal
+                </x-nawasara-ui::button>
+                <x-nawasara-ui::button color="primary" wire:click="save">
+                    Simpan
+                </x-nawasara-ui::button>
+            </x-slot:footer>
+        </x-nawasara-ui::modal>
     </x-nawasara-ui::page.container>
 </div>

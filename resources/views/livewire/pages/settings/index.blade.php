@@ -6,7 +6,7 @@
 
     <x-nawasara-ui::page.container>
         <x-nawasara-ui::page-header
-            title="Pengaturan Lapor Bunda"
+            title="Pengaturan Laporan Warga"
             description="Angka-angka di halaman ini adalah janji ke warga, bukan setelan teknis. Perubahan langsung berlaku tanpa perlu deploy.">
             <x-nawasara-ui::button color="primary" wire:click="save" wire:loading.attr="disabled">
                 Simpan Perubahan

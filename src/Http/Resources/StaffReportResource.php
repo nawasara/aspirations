@@ -50,7 +50,11 @@ class StaffReportResource extends JsonResource
 
             // Sama seperti sisi warga: nama disaring, `keycloak_sub` tidak
             // pernah ikut.
-            'reporter_name' => $this->is_anonymous ? 'Warga Ponorogo' : ($this->citizen_name ?? 'Warga Ponorogo'),
+            //
+            // ⚠️ Memakai accessor `reporter_name` pada model. Sebelumnya baris
+            // ini membaca `citizen_name`, yang tidak pernah ada — jadi bahkan
+            // laporan TIDAK anonim pun terkirim sebagai "Warga Ponorogo".
+            'reporter_name' => $this->reporter_name ?? 'Warga Ponorogo',
 
             // ── SLA: target, aktual, dan keadaan sekarang ──
             'sla' => [

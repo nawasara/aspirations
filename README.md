@@ -43,6 +43,28 @@ the front door until the department is registered.
 php artisan db:seed --class="Nawasara\Registry\Database\Seeders\OpdSeeder"
 ```
 
+### Sample data (development only)
+
+An empty panel cannot be judged — every list looks fine when there is nothing
+in it, and the states that actually break are the ones no empty database
+produces.
+
+```bash
+php artisan db:seed --class="Nawasara\Aspirations\Database\Seeders\SampleReportSeeder"
+```
+
+16 reports across every status, with photos, timelines, internal notes,
+ratings and support counts. It refuses to run in production, and every row it
+creates is coded `LBX-…` so `purge()` can remove exactly those and nothing
+else — without a marker like that, sample and real data cannot be told apart
+once they mix.
+
+The distribution is deliberately uneven: real queues pile up in `in_progress`
+and only a couple of reports are ever overdue. One report per status looks
+tidy and hides precisely what needs testing.
+
+Re-running it replaces the sample rows rather than duplicating them.
+
 ## Requirements
 
 | Package | Used for |
@@ -209,6 +231,59 @@ the daily limit, dispatch, SLA stamping and content screening.
 **Resources are allow-lists.** Add a column to a resource deliberately, not by
 switching to `toArray()` — with a deny-list every future column ships by
 default, including ones that should not.
+
+## Staff panel
+
+The Livewire pages under `nawasara-aspirations/`. They follow the standard
+Nawasara list-page shape (`AGENTS.md` §1a) — one `filter-panel` holding every
+filter, `search-input` beside it, active-filter chips below, row actions in a
+three-dot dropdown.
+
+| Page | What it is for |
+|---|---|
+| `/dashboard` | Summary figures, trend, top categories, map, attention list |
+| `/reports` | The queue — filter by status, category, kecamatan, overdue |
+| `/reports/{code}` | One report: photos, handling actions, timeline, feedback |
+| `/categories` | Report categories and their target OPD |
+| `/settings` | SLA windows and policy |
+
+**The panel is read-and-handle, not a second workflow.** Every status change
+goes through `ReportWorkflow`, the same object the API uses. That is deliberate:
+when the panel and the app each own a copy of the rules, the two drift and a
+report becomes legal to approve in one and not the other.
+
+### Why the detail page shows what it shows
+
+Three things were held in the database for months without any page rendering
+them, and staff judged reports without them:
+
+- **Photos.** A pothole the width of a hand and one the width of a car read
+  identically as text. Report photos and evidence photos are shown apart —
+  mixed together they look alike while meaning opposite things.
+- **Timeline.** Sourced from `responses`, which already records every status
+  change; there is no separate history table because here the history and the
+  reply are the same object. Internal notes are shown to staff (they explain
+  why a report stopped moving) and clearly marked, since they never reach the
+  citizen.
+- **Citizen feedback.** Rating and "Saya Juga Mengalami". A report five people
+  report is no longer one person's complaint, and that is what separates a
+  pothole in one alley from one on a road a whole kelurahan uses.
+
+A photo whose file has gone missing renders as a broken card rather than being
+hidden — a report that lost its evidence is something staff need to see, not
+something to make look like a report that never had any.
+
+### Export
+
+`aspirations.report.export` gates a CSV download of **the current filtered
+result**, not the whole table — the recap leadership asks for is nearly always
+"overdue reports in kecamatan X", and downloading everything to filter again in
+Excel is the work this page already did.
+
+It streams and chunks, because one export can span tens of thousands of rows,
+and it writes a UTF-8 BOM: without it Excel on Windows guesses the encoding and
+kecamatan names come out corrupted — the file still downloads and still opens,
+so nobody notices until staff report the data looks "aneh".
 
 ## Scheduled jobs
 

@@ -1,12 +1,12 @@
 <div>
     <x-slot name="breadcrumb">
         <livewire:nawasara-ui.shared-components.breadcrumb
-            :items="[['label' => 'Ponorogo Hub', 'url' => '#'], ['label' => 'Lapor Bunda']]" />
+            :items="[['label' => 'Ponorogo Hub', 'url' => '#'], ['label' => 'Laporan Warga']]" />
     </x-slot>
 
     <x-nawasara-ui::page.container>
         <x-nawasara-ui::page-header
-            title="Lapor Bunda"
+            title="Laporan Warga"
             description="Pantau laporan warga dan kepatuhan batas waktu penanganan.">
         </x-nawasara-ui::page-header>
 

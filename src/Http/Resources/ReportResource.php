@@ -117,8 +117,11 @@ class ReportResource extends JsonResource
             return 'Warga Ponorogo';
         }
 
-        // Nama diambil dari profil warga bila relasinya dimuat; bila tidak,
-        // jangan menebak — sebutan netral lebih baik daripada nama yang salah.
-        return $this->citizen_name ?? 'Warga Ponorogo';
+        // ⚠️ `reporter_name` pada model, BUKAN `citizen_name` — yang terakhir
+        // bukan kolom, bukan relasi, dan bukan accessor, sehingga selalu null:
+        // setiap laporan terkirim sebagai "Warga Ponorogo" termasuk yang tidak
+        // anonim. Accessor-nya mengembalikan null bila namanya tak dapat
+        // disebut, dan sebutan penggantinya diputuskan di sini.
+        return $this->reporter_name ?? 'Warga Ponorogo';
     }
 }

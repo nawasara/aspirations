@@ -15,8 +15,8 @@ use Nawasara\Registry\Models\Opd;
  */
 class Index extends Component
 {
-    public bool $showForm = false;
-
+    // Tidak ada properti `showForm`: modalnya dikendalikan Alpine lewat event,
+    // sehingga membuka dan menutupnya tidak menunggu perjalanan ke server.
     public ?string $editingId = null;
 
     // Semua nullable / bertipe longgar mengikuti kolomnya di basis data.
@@ -84,7 +84,11 @@ class Index extends Component
     {
         $this->authorize('aspirations.category.manage');
         $this->resetForm();
-        $this->showForm = true;
+
+        // Tombolnya sudah membuka modal lewat Alpine agar terasa seketika.
+        // Ini untuk pemanggil yang TIDAK lewat tombol itu — tanpa ini,
+        // create() dari tempat lain menyiapkan form yang tak pernah tampil.
+        $this->dispatch('modal-open:kategori-form');
     }
 
     public function edit(string $id): void
@@ -109,7 +113,7 @@ class Index extends Component
         $this->is_sensitive = $category->is_sensitive;
         $this->requires_evidence = $category->requires_evidence;
 
-        $this->showForm = true;
+        $this->dispatch('modal-open:kategori-form');
     }
 
     public function save(): void
@@ -137,7 +141,10 @@ class Index extends Component
             $pesan = 'Kategori ditambahkan.';
         }
 
-        $this->showForm = false;
+        // ⚠️ id ada di NAMA event, bukan di payload. `dispatch('close-modal',
+        // 'kategori-form')` dari sisi Livewire TIDAK bekerja — modalnya diam
+        // menutupi tabel meski penyimpanan sudah berhasil.
+        $this->dispatch('modal-close:kategori-form');
         $this->resetForm();
 
         $this->dispatch('toast', type: 'success', message: $pesan);

@@ -5,6 +5,7 @@ namespace Nawasara\Aspirations\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Nawasara\Citizen\Models\CitizenProfile;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Nawasara\Registry\Concerns\ScopedToOpd;
 use Nawasara\Registry\Models\Opd;
@@ -124,6 +125,43 @@ class Report extends Model
     public function districtRef(): BelongsTo
     {
         return $this->belongsTo(District::class, 'district_code', 'code');
+    }
+
+    /**
+     * Profil warga pelapor.
+     *
+     * Ditautkan lewat `keycloak_sub`, BUKAN foreign key — profil warga dibuat
+     * saat login pertama (lihat nawasara/citizen), jadi laporan bisa saja masuk
+     * dari warga yang profilnya belum ada. Relasi ber-FK akan menolak baris
+     * seperti itu; di sini yang terjadi hanyalah relasinya null.
+     */
+    public function citizen(): BelongsTo
+    {
+        return $this->belongsTo(CitizenProfile::class, 'keycloak_sub', 'keycloak_sub');
+    }
+
+    /**
+     * Nama pelapor — ATAU null bila tidak boleh/tidak dapat disebut.
+     *
+     * ⚠️ Mengembalikan null pada laporan anonim, dan itu disengaja: yang
+     * memanggil harus memutuskan sendiri sebutan penggantinya, alih-alih
+     * mendapat string yang diam-diam terlihat seperti nama sungguhan.
+     *
+     * "Anonim" menyembunyikan NAMA, bukan menjadikan pelapor tak dikenal —
+     * `keycloak_sub` tetap tersimpan, sehingga pemberitahuan tetap sampai ke
+     * warganya. Yang tidak boleh adalah namanya sampai ke panel OPD.
+     *
+     * Sebelumnya kedua Resource API membaca `$this->citizen_name`, yang bukan
+     * kolom, bukan relasi, dan bukan accessor — jadi selalu null, dan SETIAP
+     * laporan terkirim sebagai "Warga Ponorogo" termasuk yang tidak anonim.
+     */
+    public function getReporterNameAttribute(): ?string
+    {
+        if ($this->is_anonymous) {
+            return null;
+        }
+
+        return $this->citizen?->full_name ?: null;
     }
 
     /**
