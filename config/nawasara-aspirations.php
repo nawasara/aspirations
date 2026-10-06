@@ -286,8 +286,20 @@ return [
         // Dikosongkan (null) berarti memakai bucket bawaan dari Vault.
         'bucket' => 'nawasara-aspirations',
 
-        // Umur URL presigned (detik). Pendek dengan sengaja.
+        // Umur URL foto (detik). Pendek dengan sengaja.
         'url_ttl' => 900,
+
+        // Dari mana foto dilayani ke web dan aplikasi.
+        //
+        //   nawasara  Dialirkan lewat Nawasara (PhotoController). MinIO tetap
+        //             di jaringan internal dan tidak perlu dibuka ke internet.
+        //   minio     Presigned URL langsung ke MinIO. HANYA bila MinIO punya
+        //             alamat publik ber-HTTPS (Vault `minio.public_url`).
+        //
+        // Bawaannya `nawasara` sejak Oktober 2026: server MinIO bersama tidak
+        // punya alamat publik yang melayani foto, dan foto berhenti tampil di
+        // web maupun aplikasi.
+        'serve_via' => 'nawasara',
     ],
 
     /*

@@ -61,6 +61,7 @@ class AspirationsServiceProvider extends ServiceProvider
         }
 
         $this->registerLivewire();
+        $this->registerPhotoRoute();
         $this->registerPublicRoutes();
         $this->registerCitizenRoutes();
         $this->registerStaffRoutes();
@@ -174,6 +175,29 @@ class AspirationsServiceProvider extends ServiceProvider
      * tidak ada endpoint yang tanpa sengaja dapat dicapai dua jenis token.
      * Batas antara "milik warga" dan "milik OPD" harus terlihat dari URL-nya.
      */
+    /**
+     * Foto laporan, dialirkan dari MinIO lewat Nawasara.
+     *
+     * Dijaga tanda tangan URL, bukan login: tag <img> di web tidak dapat
+     * mengirim header token, sama seperti presigned URL MinIO yang
+     * digantikannya. Tanda tangannya RELATIF (`signed:relative`) supaya tidak
+     * gagal ketika Cloudflare atau nginx mengubah host atau skema.
+     *
+     * ⚠️ Di luar grup `api` dan `web`, jadi SubstituteBindings dipasang
+     * sendiri. Tanpanya `{attachment}` tidak diubah menjadi model, controller
+     * menerima objek kosong, dan setiap foto dijawab 404 tanpa sebab yang
+     * terlihat. Tanpa sesi dan cookie: foto tidak butuh keduanya.
+     */
+    protected function registerPhotoRoute(): void
+    {
+        $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/aspirations';
+
+        Route::prefix($prefix)
+            ->middleware(['signed:relative', \Illuminate\Routing\Middleware\SubstituteBindings::class])
+            ->get('photos/{attachment}', Http\Api\PhotoController::class)
+            ->name('nawasara-aspirations.photo');
+    }
+
     protected function registerStaffRoutes(): void
     {
         $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/staff/aspirations';

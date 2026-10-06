@@ -47,10 +47,49 @@ class Attachment extends Model
     /**
      * URL sementara untuk menampilkan foto.
      *
-     * Bucket privat, jadi harus presigned. Dibuat per permintaan; jangan
-     * disimpan ke basis data atau di-cache melewati umurnya.
+     * Dibuat per permintaan; jangan disimpan ke basis data atau di-cache
+     * melewati umurnya.
+     *
+     * Bawaannya menunjuk ke Nawasara sendiri (PhotoController), bukan ke
+     * MinIO: MinIO tidak punya alamat publik yang dapat melayani foto. Lihat
+     * catatan di PhotoController. `serve_via = minio` mengembalikan perilaku
+     * lama (presigned langsung) untuk kelak, bila MinIO khusus Nawasara dengan
+     * alamat publik ber-HTTPS sudah tersedia.
      */
     public function temporaryUrl(): ?string
+    {
+        if (config('nawasara-aspirations.storage.serve_via', 'nawasara') !== 'minio') {
+            return $this->proxiedUrl();
+        }
+
+        return $this->presignedUrl();
+    }
+
+    /**
+     * URL bertanda tangan ke PhotoController.
+     *
+     * Ditandatangani RELATIF (hanya jalurnya), lalu dijadikan absolut dengan
+     * host permintaan saat ini. Tanda tangan absolut ikut menandatangani host
+     * dan skema, dan keduanya dapat berubah di antara Cloudflare, nginx, dan
+     * aplikasi; URL yang sah lalu ditolak sebagai tidak sah.
+     */
+    public function proxiedUrl(): string
+    {
+        $ttl = (int) config('nawasara-aspirations.storage.url_ttl', 900);
+
+        return url(\Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'nawasara-aspirations.photo',
+            now()->addSeconds($ttl),
+            ['attachment' => $this->getKey()],
+            absolute: false,
+        ));
+    }
+
+    /**
+     * Presigned URL langsung ke MinIO. Hanya berguna bila MinIO punya alamat
+     * publik ber-HTTPS; lihat `storage.public_url` di Vault grup `minio`.
+     */
+    public function presignedUrl(): ?string
     {
         $ttl = (int) config('nawasara-aspirations.storage.url_ttl', 900);
 
