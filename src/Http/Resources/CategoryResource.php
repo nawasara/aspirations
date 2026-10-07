@@ -69,6 +69,16 @@ class CategoryResource extends JsonResource
             // mengetahuinya setelah menekan tombol selesai.
             'requires_evidence' => (bool) $this->requires_evidence,
 
+            // Laporan berkategori sensitif tidak pernah tampil di peta,
+            // linimasa, maupun detail publik. Lembar saring di aplikasi perlu
+            // tahu supaya tidak menawarkan kategori yang hasilnya pasti kosong,
+            // dan menyiratkan laporannya ada tetapi disembunyikan.
+            //
+            // Dikirim server, bukan dicocokkan aplikasi menurut kode: kategori
+            // yang kelak ditandai sensitif langsung tersaring tanpa merilis
+            // ulang aplikasi.
+            'is_sensitive' => (bool) $this->is_sensitive,
+
             'sort_order' => (int) $this->sort_order,
         ];
     }

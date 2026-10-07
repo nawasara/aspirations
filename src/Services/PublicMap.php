@@ -4,6 +4,7 @@ namespace Nawasara\Aspirations\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Nawasara\Aspirations\Models\Attachment;
 use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Models\Report;
 
@@ -169,10 +170,88 @@ class PublicMap
         $query = $this->applyFilters($this->visible(), $filters)
             ->with(['category', 'opd']);
 
-        // Haversine, dihitung di basis data supaya pengurutan dan penyaringan
-        // radius terjadi SEBELUM paginasi. Menghitungnya di PHP berarti
-        // menarik seluruh laporan lebih dulu, lalu mengurutkan sebagian kecil
-        // saja — dan halaman kedua akan berisi data yang salah.
+        $this->withDistance($query, $latitude, $longitude, $radiusMeters);
+
+        // Yang punya jarak lebih dulu, terdekat di atas — itu yang dicari warga
+        // saat membuka panel ini. Yang tanpa koordinat jatuh ke bawah, urut
+        // terbaru, bukan tercampur acak di tengah daftar.
+        return $query
+            ->orderByRaw('distance_meters IS NULL')
+            ->orderByRaw('distance_meters ASC')
+            ->latest('received_at')
+            ->paginate(20);
+    }
+
+    /** Urutan yang diterima linimasa. Sengaja tanpa "terpopuler"; lihat feed(). */
+    public const FEED_SORTS = ['nearest', 'latest', 'recently_resolved'];
+
+    /**
+     * Linimasa laporan warga: daftar yang digulir, dengan foto.
+     *
+     * Lewat `visible()` yang sama dengan peta dan detail publik. Penyaringan
+     * dan pengurutan terjadi di basis data SEBELUM paginasi, supaya halaman
+     * kedua berisi data yang benar.
+     *
+     * ⚠️ Tidak ada urutan "terpopuler" (support_count), dengan sengaja. Urutan
+     * populer mengundang warga menulis untuk dilihat, bukan untuk ditangani,
+     * dan menenggelamkan keluhan desa terpencil yang pendukungnya sedikit.
+     * Tidak menyediakannya membuat keputusan itu tidak dapat dibatalkan
+     * diam-diam dari sisi aplikasi.
+     *
+     * @param  array{sort: string, lat?: ?float, lng?: ?float, radius?: ?int, district?: ?string,
+     *               status?: ?string, category?: ?string}  $opts  sudah divalidasi pemanggil
+     */
+    public function feed(array $opts): LengthAwarePaginator
+    {
+        $query = $this->applyFilters($this->visible(), $opts)
+            ->with([
+                'category',
+                'opd',
+                // Foto warga dulu, lalu bukti OPD: kiriman adalah slider, dan
+                // bukti ditampilkan aplikasi sebagai "Sesudah".
+                'attachments' => fn ($q) => $q
+                    ->orderByRaw('kind = ?', [Attachment::KIND_EVIDENCE])
+                    ->orderBy('created_at'),
+            ]);
+
+        $hasPosition = isset($opts['lat'], $opts['lng']);
+
+        if ($hasPosition) {
+            $this->withDistance($query, (float) $opts['lat'], (float) $opts['lng'], $opts['radius'] ?? null);
+        } elseif (! empty($opts['district'])) {
+            $query->where('district_code', $opts['district']);
+        }
+
+        match ($opts['sort']) {
+            'nearest' => $query
+                ->orderByRaw('distance_meters IS NULL')
+                ->orderByRaw('distance_meters ASC')
+                ->latest('received_at'),
+
+            // Waktu SELESAI, bukan waktu masuk: laporan yang masuk tiga bulan
+            // lalu dan selesai kemarin justru yang paling layak disebut "baru
+            // selesai". `resolved_at` di jawaban berasal dari kolom ini.
+            'recently_resolved' => $query->orderByDesc('verified_at'),
+
+            default => $query->latest('received_at'),
+        };
+
+        return $query->paginate(20);
+    }
+
+    /**
+     * Tambahkan kolom `distance_meters` dan, bila diminta, saring radius.
+     *
+     * Haversine, dihitung di basis data supaya pengurutan dan penyaringan
+     * radius terjadi SEBELUM paginasi. Menghitungnya di PHP berarti menarik
+     * seluruh laporan lebih dulu, lalu mengurutkan sebagian kecil saja, dan
+     * halaman kedua akan berisi data yang salah.
+     *
+     * Satu tempat untuk peta dan linimasa, supaya keduanya menghitung jarak
+     * dengan cara yang sama persis.
+     */
+    protected function withDistance(Builder $query, float $latitude, float $longitude, ?int $radiusMeters): void
+    {
         $haversine = '(6371000 * ACOS(LEAST(1.0, GREATEST(-1.0,'
             .' COS(RADIANS(?)) * COS(RADIANS(latitude))'
             .' * COS(RADIANS(longitude) - RADIANS(?))'
@@ -191,15 +270,6 @@ class PublicMap
                     ->orWhereRaw("{$haversine} <= ?", [$latitude, $longitude, $latitude, $radiusMeters]);
             });
         }
-
-        // Yang punya jarak lebih dulu, terdekat di atas — itu yang dicari warga
-        // saat membuka panel ini. Yang tanpa koordinat jatuh ke bawah, urut
-        // terbaru, bukan tercampur acak di tengah daftar.
-        return $query
-            ->orderByRaw('distance_meters IS NULL')
-            ->orderByRaw('distance_meters ASC')
-            ->latest('received_at')
-            ->paginate(20);
     }
 
     /**
@@ -233,8 +303,13 @@ class PublicMap
     {
         // Kategori disaring lewat KODE, bukan id: kode itulah yang dipegang
         // aplikasi dan dapat dibaca manusia di URL.
+        //
+        // Boleh beberapa sekaligus, dipisah koma (`jalan,lampu`): lembar saring
+        // linimasa memilih lebih dari satu. Satu kode tanpa koma tetap bekerja
+        // seperti sebelumnya, jadi peta tidak berubah.
         if (! empty($filters['category'])) {
-            $query->whereHas('category', fn ($q) => $q->where('code', $filters['category']));
+            $codes = array_values(array_filter(array_map('trim', explode(',', (string) $filters['category']))));
+            $query->whereHas('category', fn ($q) => $q->whereIn('code', $codes));
         }
 
         // "diproses" menggabungkan beberapa status menjadi satu pilihan yang

@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
+use Illuminate\Validation\ValidationException;
+use Nawasara\Aspirations\Http\Resources\FeedReportResource;
 use Nawasara\Aspirations\Http\Resources\ReportResource;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Support;
@@ -298,6 +300,73 @@ class CitizenReportController extends Controller
         $report->setAttribute('is_mine', $report->keycloak_sub === $sub);
 
         return (new ReportResource($report))->response();
+    }
+
+    /**
+     * Linimasa laporan seluruh warga, untuk pengawasan bersama.
+     *
+     * GET /api/v1/aspirations/reports/feed?lat=-7.86&lng=111.46&category=jalan,lampu
+     *
+     * Lewat PublicMap::feed(), jadi penyaringan privasinya sama persis dengan
+     * peta dan detail publik. Bentuk kirimannya FeedReportResource: tanpa nama
+     * pelapor, koordinat, dan alamat; lihat catatan di kelas itu.
+     *
+     * Urutan yang diminta tetapi tidak dapat dipenuhi dijawab 422, BUKAN
+     * diam-diam diganti: aplikasi perlu tahu bahwa yang tampil bukan urutan
+     * yang dimintanya.
+     */
+    public function feed(Request $request, PublicMap $map): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $data = $request->validate([
+            'sort' => ['nullable', 'string', 'in:'.implode(',', PublicMap::FEED_SORTS)],
+            'lat' => ['nullable', 'required_with:lng', 'required_if:sort,nearest', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'required_with:lat', 'required_if:sort,nearest', 'numeric', 'between:-180,180'],
+            'radius' => ['nullable', 'integer', 'min:100', 'max:50000'],
+            'district' => ['nullable', 'string', 'max:10'],
+            'status' => ['nullable', 'string', 'in:in_progress,resolved', 'required_if:sort,recently_resolved'],
+            // Beberapa kode dipisah koma; batasnya longgar karena daftar
+            // kategori pendek, tetapi tetap ada supaya tidak menerima apa saja.
+            'category' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $hasPosition = isset($data['lat'], $data['lng']);
+        $sort = $data['sort'] ?? ($hasPosition ? 'nearest' : 'latest');
+
+        // "Baru selesai" hanya bermakna untuk laporan yang memang selesai;
+        // pada status lain `verified_at` kosong dan urutannya tidak berarti.
+        if ($sort === 'recently_resolved' && ($data['status'] ?? null) !== 'resolved') {
+            throw ValidationException::withMessages([
+                'status' => 'Urutan recently_resolved hanya dapat dipakai bersama status=resolved.',
+            ]);
+        }
+
+        $reports = $map->feed([
+            'sort' => $sort,
+            'lat' => $hasPosition ? (float) $data['lat'] : null,
+            'lng' => $hasPosition ? (float) $data['lng'] : null,
+            'radius' => $hasPosition
+                ? (isset($data['radius']) ? (int) $data['radius'] : PublicMapController::DEFAULT_RADIUS_METERS)
+                : null,
+            'district' => $data['district'] ?? null,
+            'status' => $data['status'] ?? null,
+            'category' => $data['category'] ?? null,
+        ]);
+
+        // is_supported untuk satu halaman dengan SATU query, bukan dua puluh.
+        $supported = Support::whereIn('report_id', $reports->getCollection()->modelKeys())
+            ->where('keycloak_sub', $sub)
+            ->pluck('report_id')
+            ->map(fn ($id) => (string) $id)
+            ->flip();
+
+        $reports->getCollection()->each(function (Report $report) use ($supported, $sub) {
+            $report->setAttribute('is_supported', $supported->has((string) $report->getKey()));
+            $report->setAttribute('is_mine', $report->keycloak_sub === $sub);
+        });
+
+        return FeedReportResource::collection($reports)->response();
     }
 
     /** Batalkan dukungan. */

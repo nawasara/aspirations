@@ -24,6 +24,10 @@ Route::get('/categories', CategoryController::class)->name('categories');
 // "Saya Juga Mengalami" alih-alih menambah laporan ganda.
 Route::get('/reports/similar', [CitizenReportController::class, 'similar'])->name('reports.similar');
 
+// Linimasa laporan seluruh warga. Juga SEBELUM `/reports/{code}`, supaya
+// `feed` tidak tertangkap sebagai kode laporan.
+Route::get('/reports/feed', [CitizenReportController::class, 'feed'])->name('reports.feed');
+
 Route::get('/reports', [CitizenReportController::class, 'index'])->name('reports.index');
 Route::post('/reports', [CitizenReportController::class, 'store'])->name('reports.store');
 Route::get('/reports/{code}', [CitizenReportController::class, 'show'])->name('reports.show');
