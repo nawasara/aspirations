@@ -28,6 +28,10 @@ Route::get('/reports', [CitizenReportController::class, 'index'])->name('reports
 Route::post('/reports', [CitizenReportController::class, 'store'])->name('reports.store');
 Route::get('/reports/{code}', [CitizenReportController::class, 'show'])->name('reports.show');
 
+// Detail laporan warga LAIN, untuk ikut mengawasi. Terpisah dari `show` yang
+// hanya untuk pemiliknya; lihat CitizenReportController::showPublic.
+Route::get('/reports/{code}/public', [CitizenReportController::class, 'showPublic'])->name('reports.show-public');
+
 Route::post('/reports/{code}/photos', [CitizenReportController::class, 'uploadPhoto'])->name('reports.photos');
 
 // Penilaian & dukungan — menutup lingkaran dari OPD kembali ke warga.

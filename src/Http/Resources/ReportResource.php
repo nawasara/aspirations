@@ -101,6 +101,15 @@ class ReportResource extends JsonResource
             'photos' => AttachmentResource::collection(
                 $this->whenLoaded('attachments')
             ),
+
+            // Hanya ada pada detail laporan warga lain (`/reports/{code}/public`),
+            // tempat controller mengisinya. Di endpoint lain kuncinya tidak
+            // muncul sama sekali, jadi bentuk lama tidak berubah bagi yang
+            // sudah memakainya.
+            $this->mergeWhen(array_key_exists('is_supported', $this->resource->getAttributes()), fn () => [
+                'is_supported' => (bool) $this->resource->getAttribute('is_supported'),
+                'is_mine' => (bool) $this->resource->getAttribute('is_mine'),
+            ]),
         ];
     }
 

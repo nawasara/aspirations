@@ -32,6 +32,20 @@ class PublicMap
     /**
      * Dasar SEMUA jawaban peta. Tidak ada jalur lain ke data publik.
      */
+    /**
+     * Satu laporan yang boleh dibuka warga LAIN, atau null.
+     *
+     * Lewat `visible()` yang sama dengan peta, bukan query sendiri: kategori
+     * sensitif, laporan yang ditandai, dan yang tanpa kecamatan dijawab sama
+     * seperti laporan yang tidak ada. Satu-satunya jalan ke data publik tetap
+     * satu, jadi kategori yang kelak ditandai sensitif langsung ikut
+     * terlindungi di peta maupun di detail.
+     */
+    public function findVisible(string $code): ?Report
+    {
+        return $this->visible()->where('code', $code)->first();
+    }
+
     protected function visible(): Builder
     {
         return Report::query()

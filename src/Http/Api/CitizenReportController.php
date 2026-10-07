@@ -8,8 +8,10 @@ use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Http\Resources\ReportResource;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Models\Support;
 use Nawasara\Aspirations\Services\CitizenFeedback;
 use Nawasara\Aspirations\Services\PhotoUploader;
+use Nawasara\Aspirations\Services\PublicMap;
 use Nawasara\Aspirations\Services\ReportSubmission;
 use Nawasara\Aspirations\Support\Settings;
 
@@ -233,6 +235,57 @@ class CitizenReportController extends Controller
         }
 
         $report->load(['category', 'opd']);
+
+        return (new ReportResource($report))->response();
+    }
+
+    /**
+     * Detail laporan warga LAIN, untuk ikut mengawasi.
+     *
+     * Keputusan pemilik produk (7 Oktober 2026): laporan diawasi bersama, jadi
+     * bentuknya SAMA dengan detail milik sendiri, termasuk deskripsi, foto,
+     * dan linimasa. Peta yang menunjukkan "ada 21 laporan di Ngebel" tanpa
+     * membiarkan siapa pun melihat apakah laporan itu ditangani belum
+     * menjalankan fungsi pengawasan itu.
+     *
+     * Terpisah dari `show()` dengan sengaja. `show()` hanya untuk pemiliknya
+     * dan menjawab 404 untuk laporan orang lain; menggabungkan keduanya dalam
+     * satu fungsi mencampur dua aturan privasi yang berbeda.
+     *
+     * Yang tetap tertutup, lewat PublicMap: kategori sensitif, laporan yang
+     * ditandai, dan laporan tanpa kecamatan. Ketiganya dijawab 404, sama
+     * seperti kode yang tidak ada, supaya penebak tidak tahu kode itu ada.
+     *
+     * Wajib JWT warga (dipasang di grup rutenya): batas laju dihitung per
+     * akun, sehingga menebak kode berurutan (LB-2026-10-0001, 0002, ...)
+     * tidak dapat dilakukan tanpa nama.
+     */
+    public function showPublic(Request $request, string $code, PublicMap $map): JsonResponse
+    {
+        $sub = $this->citizenSub($request);
+
+        $report = $map->findVisible($code);
+
+        if (! $report) {
+            return $this->notFoundJson();
+        }
+
+        // Pemuatan yang sama dengan show(), supaya bentuknya identik dan
+        // aplikasi cukup punya satu layar detail.
+        $report->load(['category', 'opd', 'responses' => fn ($q) => $q->public()->with('user'), 'attachments']);
+
+        // Dua kolom tambahan yang hanya bermakna di sini:
+        //
+        //   is_supported  tombol "Saya juga mengalami" harus tahu keadaannya
+        //                 sendiri; tanpa ini warga yang sudah mendukung melihat
+        //                 tombol yang seolah belum ditekan.
+        //   is_mine       laporan milik sendiri dapat juga dibuka dari peta;
+        //                 aplikasi memakainya untuk tetap menampilkan Beri
+        //                 Penilaian bagi pemiliknya.
+        $report->setAttribute('is_supported', Support::where('report_id', $report->getKey())
+            ->where('keycloak_sub', $sub)
+            ->exists());
+        $report->setAttribute('is_mine', $report->keycloak_sub === $sub);
 
         return (new ReportResource($report))->response();
     }
