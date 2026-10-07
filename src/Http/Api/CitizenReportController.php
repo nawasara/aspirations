@@ -130,7 +130,12 @@ class CitizenReportController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        $similar = $this->submission->findSimilar($data)
+        // Lewat saringan publik: laporan serupa milik ORANG LAIN, jadi aturan
+        // yang sama dengan peta berlaku. Tanpa ini laporan berkategori sensitif
+        // ikut ditawarkan beserta isi lengkapnya kepada siapa pun yang kebetulan
+        // melapor di dekatnya.
+        $similar = app(PublicMap::class)
+            ->onlyVisible($this->submission->findSimilar($data))
             ->load(['category', 'opd']);
 
         return ReportResource::collection($similar)->response();
@@ -220,7 +225,12 @@ class CitizenReportController extends Controller
         // Dicari TANPA menyaring pemilik: justru laporan orang lain yang
         // didukung. Yang dijaga service adalah larangan mendukung laporan
         // sendiri.
-        $report = Report::where('code', $code)->first();
+        //
+        // Tetapi lewat saringan publik (Oktober 2026). Jawaban endpoint ini
+        // memuat isi lengkap laporan, jadi tanpa saringan siapa pun dapat
+        // membaca laporan berkategori sensitif cukup dengan "mendukungnya".
+        // Laporan yang tidak boleh terlihat di peta juga tidak dapat didukung.
+        $report = app(PublicMap::class)->findVisible($code);
 
         if (! $report) {
             return $this->notFoundJson();
@@ -295,7 +305,7 @@ class CitizenReportController extends Controller
     {
         $sub = $this->citizenSub($request);
 
-        $report = Report::where('code', $code)->first();
+        $report = app(PublicMap::class)->findVisible($code);
 
         if (! $report) {
             return $this->notFoundJson();

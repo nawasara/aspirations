@@ -287,7 +287,7 @@ class ReportSubmission
         return $this->duplicates->findSimilar(
             (float) $data['latitude'],
             (float) $data['longitude'],
-            (int) $data['category_id'],
+            (string) $data['category_id'],
         );
     }
 }

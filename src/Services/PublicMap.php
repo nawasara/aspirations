@@ -46,6 +46,31 @@ class PublicMap
         return $this->visible()->where('code', $code)->first();
     }
 
+    /**
+     * Sisakan hanya laporan yang boleh dilihat warga lain.
+     *
+     * Untuk tempat yang mendapat laporan lewat jalan lain, misalnya pencarian
+     * laporan serupa berdasarkan jarak. Kelayakannya ditanyakan ke `visible()`
+     * yang sama, bukan diperiksa ulang di sini, supaya aturan publik tetap
+     * hanya ada di satu tempat.
+     *
+     * @param  \Illuminate\Support\Collection<int, Report>  $reports
+     * @return \Illuminate\Support\Collection<int, Report>
+     */
+    public function onlyVisible(\Illuminate\Support\Collection $reports): \Illuminate\Support\Collection
+    {
+        if ($reports->isEmpty()) {
+            return $reports;
+        }
+
+        $allowed = $this->visible()
+            ->whereIn('id', $reports->map(fn (Report $r) => $r->getKey())->all())
+            ->pluck('id')
+            ->flip();
+
+        return $reports->filter(fn (Report $r) => $allowed->has($r->getKey()))->values();
+    }
+
     protected function visible(): Builder
     {
         return Report::query()

@@ -27,8 +27,12 @@ class DuplicateDetector
     public function findSimilar(
         float $latitude,
         float $longitude,
-        int $categoryId,
-        ?int $excludeId = null,
+        // string, bukan int: kategori dan laporan memakai UUID. Saat masih
+        // `int`, UUID ditanak menjadi 0 atau 1, kueri mencari
+        // `category_id = 1`, dan fitur laporan serupa diam-diam tidak pernah
+        // menemukan apa pun sejak konversi ke UUID.
+        string $categoryId,
+        ?string $excludeId = null,
     ): Collection {
         $radius = Settings::duplicateRadius();
         $days = Settings::duplicateDays();
