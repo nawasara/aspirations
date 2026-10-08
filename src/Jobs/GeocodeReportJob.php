@@ -60,7 +60,11 @@ class GeocodeReportJob implements ShouldQueue
         }
 
         // Sudah pernah terisi? Jangan panggil ulang — tiap panggilan berbiaya.
-        if ($report->village !== null || $report->full_address !== null) {
+        //
+        // Hanya `full_address` yang diperiksa. `village` kini diisi saat
+        // laporan masuk dari batas wilayah (BoundaryLocator), jadi ikut
+        // memeriksanya akan membuat geocoding tidak pernah berjalan sama sekali.
+        if ($report->full_address !== null) {
             return;
         }
 
@@ -79,14 +83,15 @@ class GeocodeReportJob implements ShouldQueue
 
         $report->forceFill([
             'full_address' => $result['full_address'] ?? null,
-            'village' => $result['village'] ?? null,
+            // Desa dari batas wilayah didahulukan. Geocoder menebak dari
+            // alamat jalan terdekat, dan di perbatasan tebakannya bisa jatuh
+            // ke desa tetangga, kesalahan yang sama yang baru diperbaiki.
+            'village' => $report->village ?? $result['village'] ?? null,
             'district' => $result['district'] ?? null,
         ])->save();
 
-        // `village_id` sengaja TIDAK diisi di sini. Master wilayah belum ada
-        // di registry; mencocokkan nama desa ke id membutuhkan tabel itu.
-        // Sampai tersedia, `village` (teks) sudah cukup untuk menyaring di
-        // panel — dan mengisi id dengan tebakan lebih buruk daripada
-        // membiarkannya kosong.
+        // `village_id` sengaja TIDAK diisi di sini. Ia diisi BoundaryLocator
+        // dari batas wilayah saat laporan masuk; mencocokkan nama desa hasil
+        // geocoding ke id adalah tebakan, dan lebih buruk daripada kosong.
     }
 }

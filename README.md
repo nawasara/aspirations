@@ -235,11 +235,22 @@ aspirations.category.manage
 
 `verify` is separate from `respond` on purpose: one person must not both do the work and approve it.
 
+## Desa and kecamatan
+
+A report's `district_code`, `village` and `village_id` come from its coordinates, checked against the real village boundaries (`Services\BoundaryLocator`), when the report is received.
+
+- **Boundaries, not centroids.** This used to pick the nearest kecamatan centre. Centres are never in the middle of the area they stand for, so a strip several kilometres wide along every border landed in the neighbour: when this was replaced, 7 of 30 production reports sat in the wrong kecamatan (six from Desa Janti, Slahung, recorded as Balong). Do not bring a centroid shortcut back because it looks simpler.
+- **Source:** BIG administrative boundaries, update of 13 June 2023, with Kemendagri codes. All 307 village codes and names match the region master exactly. The data is committed as `database/boundaries/ponorogo-villages.json`; the app never calls the source. `database/boundaries/build.php` documents where it came from and rebuilds it, which is only needed when village boundaries change.
+- **Simplified to ~3 m** (187k points down to 62k, 6 MB to 1.4 MB). On 20,000 random points, 4 landed in a different village than with the full-detail data, all within a few metres of a border, well under phone GPS error.
+- **200 m snap.** A point outside every village but within 200 m of one is placed in it: GPS drift and slivers between simplified borders. Further than that is outside Ponorogo and stays empty, which is more honest than forcing it into the outermost village. Madiun, Trenggalek and Pacitan points are rejected.
+- **Existing reports do not fix themselves.** The columns are written once. After any change to the boundaries, run `php artisan aspirations:backfill-districts --force`; it prints every report that moved.
+
+Report routing to an OPD does **not** use the kecamatan; it comes from the category. A wrong kecamatan skews the map, the per-kecamatan statistics and the panel filter, and would misroute reports the day routing to kecamatan offices is added.
+
 ## Notes for future work
 
 - **SLA figures in config are placeholders.** The OPD meeting set departments and categories but no deadlines. These are the promise shown to a citizen before they submit, so they need agreeing before launch.
 - **Push notifications are not built.** Email works; FCM is one line in `ReportNotifier::channels()` once a Firebase project exists, which needs the final Android package name.
-- **`village_id` is never populated.** The region master table does not exist in registry yet, and a guessed id is worse than an empty one.
 - **Working-day mode only skips weekends.** Public holidays are not handled; the list must exist before any category switches to `uses_working_days`.
 
 ## Author

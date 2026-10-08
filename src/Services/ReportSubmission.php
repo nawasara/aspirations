@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Jobs\GeocodeReportJob;
 use Nawasara\Aspirations\Models\Category;
-use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Support\ReportCode;
 use Nawasara\Aspirations\Support\Settings;
@@ -33,6 +32,7 @@ class ReportSubmission
     public function __construct(
         protected DuplicateDetector $duplicates,
         protected ContentFilter $filter,
+        protected BoundaryLocator $locator,
     ) {}
 
     /**
@@ -84,21 +84,21 @@ class ReportSubmission
 
             $this->dispatchAndStampSla($report, $category, $receivedAt);
 
-            // Kecamatan dicocokkan dari koordinat, DI SINI dan bukan lewat
-            // antrean.
+            // Desa dan kecamatan dicocokkan dari koordinat menurut batas
+            // wilayah BIG, DI SINI dan bukan lewat antrean.
             //
-            // Ia hanya perhitungan jarak ke 21 baris di memori — tidak
+            // Ia hanya pemeriksaan titik-dalam-poligon di memori, tidak
             // menyentuh jaringan, jadi tidak ada yang perlu ditunggu. Dan
             // karena peta mengelompokkan lewat kolom ini, laporan yang
             // menunggu antrean akan hilang dari peta sampai antreannya
             // berjalan.
             //
-            // ⚠️ Ini BUKAN pengganti geocoding. Geocoding memberi nama desa
-            // dan alamat lengkap; ini hanya menjawab "kecamatan mana".
-            // Keduanya berjalan, dan yang ini tetap bekerja saat kunci Google
-            // tidak ada — keadaan yang di produksi membuat SELURUH laporan
-            // tidak berkecamatan.
-            $report->district_code = $this->matchDistrict($report);
+            // ⚠️ Ini BUKAN pengganti geocoding. Geocoding memberi alamat
+            // lengkap; ini menjawab "desa dan kecamatan mana". Keduanya
+            // berjalan, dan yang ini tetap bekerja saat kunci Google tidak
+            // ada, keadaan yang di produksi membuat SELURUH laporan tidak
+            // berkecamatan.
+            $this->locator->applyTo($report);
 
             $report->save();
 
@@ -128,27 +128,6 @@ class ReportSubmission
      * otomatis mendapat tenggat selesai yang mundur — persis terbalik dari
      * yang dimaksud.
      */
-    /**
-     * Kode kecamatan dari koordinat laporan, atau null bila tidak dapat
-     * ditentukan.
-     *
-     * Null itu SAH: laporan tanpa koordinat, atau titik di luar Ponorogo.
-     * Laporannya tetap diterima dan tetap didisposisi — ia hanya tidak
-     * muncul di peta, dan itu lebih jujur daripada menempatkannya di
-     * kecamatan yang salah.
-     */
-    protected function matchDistrict(Report $report): ?string
-    {
-        if ($report->latitude === null || $report->longitude === null) {
-            return null;
-        }
-
-        return District::nearest(
-            (float) $report->latitude,
-            (float) $report->longitude,
-        )?->code;
-    }
-
     protected function dispatchAndStampSla(Report $report, Category $category, Carbon $receivedAt): void
     {
         // Kategori tanpa OPD tetap diterima, TIDAK ditolak. Laporan warga tidak
