@@ -4,6 +4,7 @@ namespace Nawasara\Aspirations\Services;
 
 use Illuminate\Support\Facades\Log;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Citizen\Models\CitizenDevice;
 use Nawasara\Citizen\Models\CitizenProfile;
 use Nawasara\Notification\Facades\Notify;
 
@@ -17,10 +18,9 @@ use Nawasara\Notification\Facades\Notify;
  *
  * ── Kanal ────────────────────────────────────────────────────────────────
  *
- * Saat ini hanya EMAIL, karena itu yang tersedia di `nawasara/notification`.
- * Push FCM adalah tugas 4.6 di rencana kerja dan belum ada. Ketika nanti
- * ditambahkan, cukup tambah kanalnya di `channels()` — pemanggil di
- * ReportWorkflow tidak perlu berubah.
+ * Push FCM ke semua perangkat pelapor, lalu email. Push hanya dicoba setelah
+ * Firebase diisi di Vault (grup `fcm`); sebelum itu hanya email yang berjalan.
+ * Pemanggil di ReportWorkflow tidak perlu tahu kanal mana yang aktif.
  *
  * ⚠️ Kegagalan mengirim TIDAK PERNAH menggagalkan perpindahan status. Petugas
  * yang sudah menyelesaikan pekerjaannya tidak boleh melihat galat hanya karena
@@ -83,6 +83,66 @@ class ReportNotifier
      */
     protected function dispatchNotification(Report $report, string $template, array $data): void
     {
+        $context = [
+            'report_code' => $report->code,
+            'status' => $report->status,
+            // Kunci template disertakan supaya kelak dapat diganti
+            // menjadi template tersimpan tanpa mengubah pemanggil.
+            'template' => $template,
+        ];
+
+        // Push dan email dikirim TERPISAH, masing-masing dengan penjaganya
+        // sendiri: Firebase yang belum dikonfigurasi tidak boleh menahan
+        // email, dan sebaliknya.
+        $this->sendPush($report, $data, $context);
+        $this->sendEmail($report, $data, $context);
+    }
+
+    /**
+     * Push ke SEMUA perangkat pelapor (ponsel dan tablet), lebih dulu dari
+     * email: aplikasi adalah tempat warga membaca laporannya, dan surel
+     * pemerintah sering tidak dibuka.
+     *
+     * `push_data` dibaca aplikasi untuk membuka laporan yang dimaksud saat
+     * notifikasinya diketuk. `push_channel` harus sama dengan id kanal
+     * notifikasi yang dibuat aplikasi.
+     */
+    protected function sendPush(Report $report, array $data, array $context): void
+    {
+        try {
+            if (! $this->pushReady()) {
+                return;
+            }
+
+            $tokens = CitizenDevice::tokensFor($report->keycloak_sub);
+            if ($tokens->isEmpty()) {
+                return;
+            }
+
+            Notify::to(...$tokens->all())
+                ->channel(['fcm'])
+                ->subject($data['subject'])
+                ->body($data['body'])
+                ->context($context + [
+                    'push_channel' => self::PUSH_CHANNEL,
+                    'push_data' => [
+                        'type' => 'report',
+                        'code' => $report->code,
+                        'status' => $report->status,
+                    ],
+                ])
+                ->send();
+        } catch (\Throwable $e) {
+            // Ditelan dengan sengaja; lihat catatan kelas.
+            Log::warning('aspirations: push gagal dikirim', [
+                'report' => $report->code,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function sendEmail(Report $report, array $data, array $context): void
+    {
         try {
             $email = $this->reporterEmail($report);
 
@@ -98,19 +158,13 @@ class ReportNotifier
             }
 
             Notify::to($email)
-                ->channel($this->channels())
+                ->channel(['email'])
                 ->subject($data['subject'])
                 ->body($data['body'])
-                ->context([
-                    'report_code' => $report->code,
-                    'status' => $report->status,
-                    // Kunci template disertakan supaya kelak dapat diganti
-                    // menjadi template tersimpan tanpa mengubah pemanggil.
-                    'template' => $template,
-                ])
+                ->context($context)
                 ->send();
         } catch (\Throwable $e) {
-            // Ditelan dengan sengaja — lihat catatan kelas.
+            // Ditelan dengan sengaja; lihat catatan kelas.
             Log::warning('aspirations: notifikasi gagal dikirim', [
                 'report' => $report->code,
                 'error' => $e->getMessage(),
@@ -119,15 +173,27 @@ class ReportNotifier
     }
 
     /**
-     * Kanal yang dipakai.
-     *
-     * Ketika push FCM tersedia (tugas 4.6), tambahkan di sini. Push seharusnya
-     * mendahului email untuk warga: aplikasi ponsel adalah tempat mereka
-     * membaca laporannya, dan surel pemerintah sering tidak dibuka.
+     * Id kanal notifikasi Android yang dibuat aplikasi untuk kabar laporan.
+     * Disepakati dengan tim aplikasi; lihat docs/api-superapps/notifikasi.md.
      */
-    protected function channels(): array
+    public const PUSH_CHANNEL = 'laporan';
+
+    /**
+     * Push hanya dicoba bila kanal FCM ada DAN Firebase sudah diisi di Vault.
+     *
+     * Tanpa penjaga ini, setiap perubahan status selama Firebase belum
+     * disiapkan akan meninggalkan baris log gagal untuk tiap perangkat,
+     * setelah tiga kali percobaan, dan menenggelamkan kegagalan yang nyata.
+     */
+    protected function pushReady(): bool
     {
-        return ['email'];
+        try {
+            return app(\Nawasara\Notification\Services\NotificationService::class)
+                ->driver('fcm')
+                ->isReady();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** Surel pelapor, dari profil warga. */
