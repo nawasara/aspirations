@@ -95,20 +95,7 @@ class ReportNotifier
      */
     protected function dispatchNotification(Report $report, string $template, array $data): void
     {
-        // Pilihan warga di aplikasi (Pengaturan notifikasi), berlaku untuk
-        // push DAN email. Gagal membaca pilihan berarti tetap mengirim: kabar
-        // laporan yang tidak sampai lebih merugikan daripada yang tak diminta.
         $topic = self::TOPICS[$template] ?? null;
-        try {
-            if ($topic !== null && ! NotificationPreferences::allows($report->keycloak_sub, $topic)) {
-                return;
-            }
-        } catch (\Throwable $e) {
-            Log::warning('aspirations: pengaturan notifikasi warga tidak terbaca', [
-                'report' => $report->code,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
         $context = [
             'report_code' => $report->code,
@@ -121,8 +108,38 @@ class ReportNotifier
         // Push dan email dikirim TERPISAH, masing-masing dengan penjaganya
         // sendiri: Firebase yang belum dikonfigurasi tidak boleh menahan
         // email, dan sebaliknya.
-        $this->sendPush($report, $data, $context);
-        $this->sendEmail($report, $data, $context);
+        //
+        // Masing-masing juga menurut sakelar warga untuk kanal itu
+        // (Pengaturan Notifikasi di aplikasi): mematikan email tidak boleh
+        // ikut mematikan push.
+        if ($this->citizenWants($report, $topic, NotificationPreferences::CHANNEL_PUSH)) {
+            $this->sendPush($report, $data, $context);
+        }
+        if ($this->citizenWants($report, $topic, NotificationPreferences::CHANNEL_EMAIL)) {
+            $this->sendEmail($report, $data, $context);
+        }
+    }
+
+    /**
+     * Gagal membaca pilihan berarti tetap mengirim: kabar laporan yang tidak
+     * sampai lebih merugikan daripada yang tidak diminta.
+     */
+    protected function citizenWants(Report $report, ?string $topic, string $channel): bool
+    {
+        if ($topic === null) {
+            return true;
+        }
+
+        try {
+            return NotificationPreferences::allows($report->keycloak_sub, $topic, $channel);
+        } catch (\Throwable $e) {
+            Log::warning('aspirations: pengaturan notifikasi warga tidak terbaca', [
+                'report' => $report->code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
     }
 
     /**
