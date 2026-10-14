@@ -13,6 +13,7 @@ use Nawasara\Aspirations\Contracts\GeocodingProvider;
 use Nawasara\Aspirations\Jobs\AutoCloseJob;
 use Nawasara\Aspirations\Jobs\CheckSlaJob;
 use Nawasara\Aspirations\Jobs\CheckVerificationDueJob;
+use Nawasara\Aspirations\Jobs\SendSlaRemindersJob;
 use Nawasara\Aspirations\Services\Geocoding\GoogleGeocoder;
 use Nawasara\Aspirations\Services\Geocoding\NullGeocoder;
 use Symfony\Component\Finder\Finder;
@@ -151,6 +152,16 @@ class AspirationsServiceProvider extends ServiceProvider
                 ->name('nawasara-aspirations:check-sla')
                 ->hourly()
                 ->withoutOverlapping(10);
+
+            // Peringatan tenggat ke petugas OPD. Tiap jam, sesuai jendela
+            // terkecilnya (SlaReminderPlan::MIN_WINDOW_HOURS = 1): jadwal yang
+            // lebih jarang dapat melompati jendela peringatan sama sekali.
+            if (config('nawasara-aspirations.sla_reminders.enabled', true)) {
+                $schedule->call(fn () => SendSlaRemindersJob::dispatch())
+                    ->name('nawasara-aspirations:sla-reminders')
+                    ->hourly()
+                    ->withoutOverlapping(10);
+            }
 
             $schedule->call(fn () => CheckVerificationDueJob::dispatch())
                 ->name('nawasara-aspirations:check-verification')

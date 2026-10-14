@@ -216,11 +216,26 @@ It streams and chunks, because one export can span tens of thousands of rows, an
 | Job | Frequency |
 |---|---|
 | `CheckSlaJob` | hourly |
+| `SendSlaRemindersJob` | hourly (`ASPIRATIONS_SLA_REMINDERS_ENABLED`) |
 | `CheckVerificationDueJob` | hourly |
 | `AutoCloseJob` | daily, 02:00 WIB |
 | `GeocodeReportJob` | on demand |
 
 None of them change a report's status. Escalation is attention, not resolution: quietly marking overdue work as done would erase the problem it exists to surface.
+
+### Deadline reminders to OPD officers
+
+Escalation only raises `escalation_level` after the fact. `SendSlaRemindersJob` emails the officers **before** a deadline, which is what actually prevents lateness. The recipients are the active members of the report's OPD who hold `aspirations.report.respond`. Three events, each sent exactly once per report (`response_warned_at`, `resolution_warned_at`, `overdue_notified_at`): the response deadline is near, the resolution deadline is near, or either one has passed.
+
+Decisions worth keeping:
+
+- **The warning window is a quarter of the SLA span, clamped to 1–24 hours** (`SlaReminderPlan`). A fixed "24 hours before" on a 3-hour SLA would warn before the report arrived; "1 hour before" on a 14-day SLA leaves no time to act. The 1-hour floor matches the hourly schedule, since a narrower window can fall between two runs and never fire.
+- **One email per officer per run**, listing every relevant report of their OPD. Ten emails in an hour teach people to stop reading them.
+- **The migration marks reports that were already overdue.** On launch 30 of 34 open reports in production were overdue, many since August. Without that, the first run would have mailed the whole backlog to eight OPDs at once.
+- **Flagged reports are skipped.** They have not reached the OPD yet, so officers cannot see them.
+- **Citizen titles go through `e()`.** The body is HTML and the title is written by the citizen.
+
+Check what would be sent without sending it: `(new SendSlaRemindersJob(dryRun: true))->handle()` in tinker.
 
 ## Permissions
 

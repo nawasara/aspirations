@@ -95,15 +95,32 @@ class CheckSlaJob implements ShouldQueue
         //
         // Ditulis eksplisit dari `$passedAt` ke sekarang supaya arahnya tidak
         // bergantung pada perilaku pustaka yang dapat berubah antarversi.
-        $hoursLate = $passedAt->diffInHours(now(), false);
-        $level = $report->escalation_level;
+        return self::levelFor(
+            $passedAt->diffInHours(now(), false),
+            (int) $report->escalation_level,
+        );
+    }
 
-        foreach (self::ESCALATE_AFTER_HOURS as $level => $threshold) {
+    /**
+     * Tingkat dari lamanya terlambat. Tidak pernah TURUN dari tingkat yang
+     * sudah dicapai.
+     *
+     * ⚠️ Dulu ditulis `foreach (... as $level => $threshold)` dengan `$level`
+     * yang SAMA sebagai hasil. Kunci perulangan menimpa hasilnya, sehingga
+     * fungsi selalu mengembalikan kunci terakhir (2): laporan yang terlambat
+     * satu jam langsung masuk Dashboard Bunda tanpa singgah di Sekda.
+     * Ditemukan 14 Oktober 2026.
+     */
+    public static function levelFor(float $hoursLate, int $current): int
+    {
+        $target = $current;
+
+        foreach (self::ESCALATE_AFTER_HOURS as $tier => $threshold) {
             if ($hoursLate >= $threshold) {
-                $level = max($level, $level);
+                $target = max($target, $tier);
             }
         }
 
-        return $level;
+        return $target;
     }
 }

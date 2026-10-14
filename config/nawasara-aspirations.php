@@ -341,4 +341,13 @@ return [
     'scheduler' => [
         'enabled' => env('ASPIRATIONS_SCHEDULER_ENABLED', true),
     ],
+
+    /*
+    | Peringatan tenggat ke petugas OPD, lewat email (SendSlaRemindersJob).
+    | Dipisah dari `scheduler.enabled` supaya dapat dimatikan sendiri tanpa
+    | ikut menghentikan eskalasi dan penutupan otomatis.
+    */
+    'sla_reminders' => [
+        'enabled' => env('ASPIRATIONS_SLA_REMINDERS_ENABLED', true),
+    ],
 ];

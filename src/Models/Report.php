@@ -64,6 +64,10 @@ class Report extends Model
         'created_at_device' => 'datetime',
         'received_at' => 'datetime',
         'response_due_at' => 'datetime',
+        // Penanda peringatan tenggat ke petugas; lihat SendSlaRemindersJob.
+        'response_warned_at' => 'datetime',
+        'resolution_warned_at' => 'datetime',
+        'overdue_notified_at' => 'datetime',
         'first_responded_at' => 'datetime',
         'sla_due_at' => 'datetime',
         'resolution_submitted_at' => 'datetime',
