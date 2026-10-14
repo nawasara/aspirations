@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Citizen\Models\CitizenDevice;
 use Nawasara\Citizen\Models\CitizenProfile;
+use Nawasara\Citizen\Support\NotificationPreferences;
 use Nawasara\Notification\Facades\Notify;
 
 /**
@@ -41,6 +42,17 @@ class ReportNotifier
         Report::STATUS_IN_PROGRESS => 'aspirations.report.in_progress',
         Report::STATUS_RESOLVED => 'aspirations.report.resolved',
         Report::STATUS_REJECTED => 'aspirations.report.rejected',
+    ];
+
+    /**
+     * Topik pengaturan notifikasi warga untuk tiap template. Template yang
+     * tidak tercantum selalu dikirim.
+     */
+    protected const TOPICS = [
+        'aspirations.report.in_progress' => NotificationPreferences::REPORT_PROGRESS,
+        'aspirations.report.reopened' => NotificationPreferences::REPORT_PROGRESS,
+        'aspirations.report.resolved' => NotificationPreferences::REPORT_RESULT,
+        'aspirations.report.rejected' => NotificationPreferences::REPORT_RESULT,
     ];
 
     /**
@@ -83,6 +95,21 @@ class ReportNotifier
      */
     protected function dispatchNotification(Report $report, string $template, array $data): void
     {
+        // Pilihan warga di aplikasi (Pengaturan notifikasi), berlaku untuk
+        // push DAN email. Gagal membaca pilihan berarti tetap mengirim: kabar
+        // laporan yang tidak sampai lebih merugikan daripada yang tak diminta.
+        $topic = self::TOPICS[$template] ?? null;
+        try {
+            if ($topic !== null && ! NotificationPreferences::allows($report->keycloak_sub, $topic)) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('aspirations: pengaturan notifikasi warga tidak terbaca', [
+                'report' => $report->code,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $context = [
             'report_code' => $report->code,
             'status' => $report->status,
