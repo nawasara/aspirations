@@ -7,11 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Nawasara\Aspirations\Http\Resources\FeedReportResource;
+use Nawasara\Aspirations\Http\Resources\OthersReportResource;
 use Nawasara\Aspirations\Http\Resources\ReportResource;
+use Nawasara\Aspirations\Http\Resources\SimilarReportResource;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Support;
 use Nawasara\Aspirations\Services\CitizenFeedback;
+use Nawasara\Aspirations\Services\DuplicateDetector;
 use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\PublicMap;
 use Nawasara\Aspirations\Services\ReportSubmission;
@@ -138,9 +142,24 @@ class CitizenReportController extends Controller
         // melapor di dekatnya.
         $similar = app(PublicMap::class)
             ->onlyVisible($this->submission->findSimilar($data))
-            ->load(['category', 'opd']);
+            ->load(['category']);
 
-        return ReportResource::collection($similar)->response();
+        // Audit keamanan 15 Oktober 2026, temuan T5: jawabannya dulu
+        // ReportResource lengkap (koordinat, alamat, nama pelapor). Kini hanya
+        // isi kartu, dengan jarak yang dihitung di sini lalu dibulatkan oleh
+        // resource-nya. Koordinat laporan tidak keluar lagi, jadi aplikasi
+        // tidak dapat (dan tidak perlu) menghitung jaraknya sendiri.
+        $detector = app(DuplicateDetector::class);
+        $lat = (float) $data['latitude'];
+        $lng = (float) $data['longitude'];
+
+        $similar->each(function (Report $report) use ($detector, $lat, $lng) {
+            $report->setAttribute('distance_meters', ($report->latitude !== null && $report->longitude !== null)
+                ? $detector->distanceMeters($lat, $lng, (float) $report->latitude, (float) $report->longitude)
+                : null);
+        });
+
+        return SimilarReportResource::collection($similar)->response();
     }
 
     /**
@@ -248,7 +267,7 @@ class CitizenReportController extends Controller
 
         $report->load(['category', 'opd']);
 
-        return (new ReportResource($report))->response();
+        return $this->presentFor($report, $sub)->response();
     }
 
     /**
@@ -259,6 +278,12 @@ class CitizenReportController extends Controller
      * dan linimasa. Peta yang menunjukkan "ada 21 laporan di Ngebel" tanpa
      * membiarkan siapa pun melihat apakah laporan itu ditangani belum
      * menjalankan fungsi pengawasan itu.
+     *
+     * ⚠️ "Bentuk sama" berarti KUNCI yang sama, bukan isi yang sama. Untuk
+     * laporan orang lain isinya OthersReportResource: tanpa koordinat, tanpa
+     * alamat, nama pelapor disamarkan (audit keamanan 15 Oktober 2026, temuan
+     * T5). Pemilik yang membuka laporannya sendiri dari peta tetap menerima
+     * bentuk lengkap.
      *
      * Terpisah dari `show()` dengan sengaja. `show()` hanya untuk pemiliknya
      * dan menjawab 404 untuk laporan orang lain; menggabungkan keduanya dalam
@@ -299,7 +324,7 @@ class CitizenReportController extends Controller
             ->exists());
         $report->setAttribute('is_mine', $report->keycloak_sub === $sub);
 
-        return (new ReportResource($report))->response();
+        return $this->presentFor($report, $sub)->response();
     }
 
     /**
@@ -383,7 +408,22 @@ class CitizenReportController extends Controller
         $report = $this->feedback->unsupport($report, $sub);
         $report->load(['category', 'opd']);
 
-        return (new ReportResource($report))->response();
+        return $this->presentFor($report, $sub)->response();
+    }
+
+    /**
+     * Bentuk laporan menurut siapa yang meminta.
+     *
+     * Pemilik menerima ReportResource lengkap; warga lain menerima
+     * OthersReportResource yang tanpa koordinat, alamat, dan nama pelapor
+     * (audit keamanan 15 Oktober 2026, temuan T5). Dipusatkan di sini supaya
+     * endpoint baru yang mengembalikan laporan orang lain tidak lupa memilih.
+     */
+    protected function presentFor(Report $report, string $sub): JsonResource
+    {
+        return ($sub !== '' && $report->keycloak_sub === $sub)
+            ? new ReportResource($report)
+            : new OthersReportResource($report);
     }
 
     protected function notFoundJson(): JsonResponse

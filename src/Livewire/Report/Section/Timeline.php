@@ -6,6 +6,7 @@ namespace Nawasara\Aspirations\Livewire\Report\Section;
 
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Nawasara\Aspirations\Models\Report;
 
@@ -21,6 +22,10 @@ use Nawasara\Aspirations\Models\Report;
  */
 class Timeline extends Component
 {
+    // #[Locked]: diisi server, tidak pernah ditulis browser. Audit keamanan
+    // 15 Oktober 2026: properti publik yang tidak dikunci dapat diubah lewat
+    // payload Livewire, lalu aksi berikutnya bekerja pada id yang dipalsukan.
+    #[Locked]
     public Report $report;
 
     public function mount(Report $report): void

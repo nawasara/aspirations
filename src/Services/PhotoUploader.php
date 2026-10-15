@@ -11,6 +11,7 @@ use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Models\Attachment;
 use Nawasara\Aspirations\Models\Report;
 use Nawasara\Aspirations\Models\Response;
+use Nawasara\Aspirations\Support\ImageSanitizer;
 use Nawasara\Aspirations\Support\Settings;
 use Nawasara\Vault\Services\MinioDisk;
 
@@ -100,6 +101,33 @@ class PhotoUploader
         $disk = (string) config('nawasara-aspirations.storage.disk', 'minio');
         $bucket = (string) config('nawasara-aspirations.storage.bucket') ?: null;
 
+        // MIME dari ISI berkas (finfo), sudah dibatasi assertAcceptable().
+        // Ekstensi diturunkan dari sini, BUKAN dari nama berkas kiriman klien
+        // (audit keamanan 15 Oktober 2026, R/13 daftar injeksi): nama itu
+        // sepenuhnya dikendalikan pemanggil.
+        $mime = (string) $file->getMimeType();
+        $extension = ImageSanitizer::extensionFor($mime)
+            ?? throw new SubmissionException('Berkas harus berupa gambar JPG, PNG, atau WebP.');
+
+        // EXIF dibaca dari berkas ASLI, sebelum metadata dibuang: kolom
+        // captured_* tetap terisi untuk verifikator seperti sebelumnya.
+        $exif = $this->readExif($file);
+
+        // Audit keamanan 15 Oktober 2026, temuan S11: yang disimpan adalah
+        // salinan TANPA metadata. Foto ini disajikan ke warga lain (feed dan
+        // detail publik), dan EXIF GPS di dalamnya membuka koordinat persis
+        // yang sengaja tidak dikirim resource publik.
+        //
+        // Gagal diproses berarti DITOLAK, bukan disimpan apa adanya: menyimpan
+        // berkas asli berarti menyimpan GPS-nya.
+        try {
+            $contents = ImageSanitizer::strip($file->getRealPath(), $mime);
+        } catch (\Throwable $e) {
+            report($e);
+
+            throw new SubmissionException('Foto tidak dapat diproses. Coba ambil ulang fotonya.');
+        }
+
         // Kunci objek disusun agar mudah ditelusuri manusia saat memeriksa
         // bucket, dan ULID di ujungnya mencegah dua unggahan bertabrakan.
         $path = sprintf(
@@ -108,15 +136,12 @@ class PhotoUploader
             $report->received_at->format('m'),
             $report->code,
             (string) Str::ulid(),
-            $file->getClientOriginalExtension() ?: 'jpg',
+            $extension,
         );
 
         // Bucket paket ini, bukan bucket bawaan Vault. MinioDisk membangunnya
         // dari kredensial yang sama; yang berbeda hanya tujuannya.
-        $this->diskFor($disk, $bucket)
-            ->put($path, file_get_contents($file->getRealPath()));
-
-        $exif = $this->readExif($file);
+        $this->diskFor($disk, $bucket)->put($path, $contents);
 
         return Attachment::create([
             'report_id' => $report->id,
@@ -130,9 +155,12 @@ class PhotoUploader
             'bucket' => $bucket,
             'path' => $path,
 
-            'mime' => $file->getMimeType(),
-            'size' => $file->getSize(),
-            'checksum_sha256' => hash_file('sha256', $file->getRealPath()),
+            // Ukuran dan checksum milik berkas YANG DISIMPAN (tanpa
+            // metadata), bukan unggahan asli: keduanya dipakai memeriksa
+            // keutuhan objek di bucket.
+            'mime' => $mime,
+            'size' => strlen($contents),
+            'checksum_sha256' => hash('sha256', $contents),
 
             'kind' => $kind,
             'source' => $source,

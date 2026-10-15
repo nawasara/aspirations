@@ -10,6 +10,7 @@ use Livewire\WithPagination;
 use Nawasara\Aspirations\Models\Category;
 use Nawasara\Aspirations\Models\District;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Support\CsvCell;
 
 /**
  * Tabel laporan warga — penyaring, pencarian, paginasi.
@@ -177,7 +178,10 @@ class Table extends Component
 
             $query->orderBy('received_at')->chunk(500, function ($rows) use ($out, $label) {
                 foreach ($rows as $r) {
-                    fputcsv($out, [
+                    // CsvCell: judul ditulis warga, dan sel berawalan `=`
+                    // dibaca Excel sebagai rumus (audit keamanan 15 Oktober
+                    // 2026, temuan R11).
+                    fputcsv($out, CsvCell::escapeRow([
                         $r->code,
                         $r->title,
                         $r->category?->name,
@@ -189,7 +193,7 @@ class Table extends Component
                         $r->received_at?->format('Y-m-d H:i'),
                         $r->rating,
                         $r->support_count,
-                    ], ',', '"', '');
+                    ]), ',', '"', '');
                 }
             });
 

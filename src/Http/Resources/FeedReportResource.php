@@ -22,8 +22,8 @@ use Nawasara\Aspirations\Services\PublicMap;
  *                                 apa pun.
  *   timeline                      dibaca di detail (`/reports/{code}/public`).
  *
- * Detail publik tetap mengirim ketiganya, seperti yang sudah diputuskan; yang
- * dibatasi di sini adalah penarikan massal, bukan pembacaan satu laporan.
+ * Sejak audit keamanan 15 Oktober 2026 (temuan T5) detail publik juga tidak
+ * lagi mengirim nama, koordinat, dan alamat; lihat OthersReportResource.
  *
  * Ditulis sebagai DAFTAR-IZIN, bukan turunan ReportResource yang membuang
  * beberapa kunci: kolom baru di ReportResource tidak boleh ikut ke linimasa

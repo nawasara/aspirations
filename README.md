@@ -94,6 +94,8 @@ Written plainly rather than through `env()`. The bucket name is not a secret and
 
 One MinIO server, one set of keys, a bucket per package. The bucket actually used is recorded on each attachment row, so changing this setting later does not orphan existing photos.
 
+Photos are stored **without metadata** (security audit 15 October 2026, finding S11). EXIF is read first into `captured_at/lat/lng`, then JPEG and PNG are re-encoded with GD after applying the EXIF orientation, and the extension comes from the detected MIME type, never from the client's filename. The production image builds GD without WebP, so WebP falls back to dropping the `EXIF` and `XMP ` chunks from the RIFF container. A photo that cannot be processed is rejected rather than stored as-is, because storing the original means storing its GPS. Photos uploaded before this change are cleaned once with `php artisan aspirations:strip-photo-metadata` (`--dry-run` to count first).
+
 The bucket must be **private**. Citizen photos carry faces, plates and the inside of people's homes, so access is always through presigned URLs with a short TTL. Use credentials scoped to this server's buckets, not a MinIO admin key.
 
 ### Geocoding
@@ -133,11 +135,27 @@ Privacy filtering for this endpoint lives in one place, `Services\PublicMap`. Se
 | `GET` | `/api/v1/aspirations/reports` |
 | `POST` | `/api/v1/aspirations/reports` |
 | `GET` | `/api/v1/aspirations/reports/similar` |
+| `GET` | `/api/v1/aspirations/reports/feed` |
 | `GET` | `/api/v1/aspirations/reports/{code}` |
+| `GET` | `/api/v1/aspirations/reports/{code}/public` |
 | `POST` | `/api/v1/aspirations/reports/{code}/photos` |
 | `POST` | `/api/v1/aspirations/reports/{code}/rate` |
 | `POST` | `/api/v1/aspirations/reports/{code}/support` |
 | `DELETE` | `/api/v1/aspirations/reports/{code}/support` |
+
+**Other citizens' reports never carry coordinates, address or reporter name**
+(security audit 15 October 2026, finding T5). `similar` answers with
+`SimilarReportResource` (code, title, status, category, support count and a
+rounded `distance_meters`); `/public` and the support endpoints answer with
+`OthersReportResource` unless the caller owns the report, in which case the
+full `ReportResource` comes back. Both are allow-lists: a new column on
+`Report` does not leak until someone adds it there on purpose.
+
+`similar` and `/public` (plus support, sharing its counter) have their own
+limiters on top of `throttle:nawasara-citizen`, configured under
+`rate_limits` (`ASPIRATIONS_SIMILAR_*`, `ASPIRATIONS_PUBLIC_DETAIL_*`):
+`similar` accepts any point, so it is the easiest way to sweep an area, and
+report codes are sequential.
 
 ### Staff (behind `api.staff`)
 
@@ -208,6 +226,8 @@ A photo whose file has gone missing renders as a broken card rather than being h
 ### Export
 
 `aspirations.report.export` gates a CSV download of **the current filtered result**, not the whole table. The recap leadership asks for is nearly always "overdue reports in kecamatan X", and downloading everything to filter again in Excel is the work this page already did.
+
+Every cell goes through `Support\CsvCell::escape()`: a value starting with `=`, `+`, `-`, `@`, tab or CR gets a leading single quote, so a citizen title like `=HYPERLINK(...)` opens as text instead of a formula (finding R11).
 
 It streams and chunks, because one export can span tens of thousands of rows, and it writes a UTF-8 BOM. Without it, Excel on Windows guesses the encoding and kecamatan names come out corrupted. The file still downloads and still opens, so nobody notices until staff report the data looks "aneh".
 

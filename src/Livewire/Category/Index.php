@@ -2,6 +2,7 @@
 
 namespace Nawasara\Aspirations\Livewire\Category;
 
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Nawasara\Aspirations\Models\Category;
 use Nawasara\Registry\Models\Opd;
@@ -17,6 +18,10 @@ class Index extends Component
 {
     // Tidak ada properti `showForm`: modalnya dikendalikan Alpine lewat event,
     // sehingga membuka dan menutupnya tidak menunggu perjalanan ke server.
+    // #[Locked]: diisi server, tidak pernah ditulis browser. Audit keamanan
+    // 15 Oktober 2026: properti publik yang tidak dikunci dapat diubah lewat
+    // payload Livewire, lalu aksi berikutnya bekerja pada id yang dipalsukan.
+    #[Locked]
     public ?string $editingId = null;
 
     // Semua nullable / bertipe longgar mengikuti kolomnya di basis data.

@@ -249,6 +249,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Batas laju membaca laporan warga LAIN
+    |--------------------------------------------------------------------------
+    | Audit keamanan 15 Oktober 2026, temuan T5. Di atas batas umum
+    | `throttle:nawasara-citizen`. Lihat Support\CitizenReadLimits.
+    |
+    |   similar        GET /reports/similar. Menerima titik sembarang, jadi
+    |                  paling mudah dipakai menyapu wilayah; batasnya ketat.
+    |                  Aplikasi memanggilnya sekali per laporan yang ditulis.
+    |   public_detail  GET /reports/{code}/public, dan POST/DELETE
+    |                  /reports/{code}/support (berbagi penghitung). Kode
+    |                  laporan berurutan, jadi tanpa batas ini dapat ditebak.
+    |
+    | `ip_per_day` lebih longgar karena ribuan warga berbagi IP operator; ia
+    | menahan satu orang yang memakai banyak akun gratis. 0 = tanpa batas.
+    */
+    'rate_limits' => [
+        'similar' => [
+            'per_minute' => (int) env('ASPIRATIONS_SIMILAR_PER_MINUTE', 10),
+            'per_day' => (int) env('ASPIRATIONS_SIMILAR_PER_DAY', 100),
+            'ip_per_day' => (int) env('ASPIRATIONS_SIMILAR_IP_PER_DAY', 1000),
+        ],
+        'public_detail' => [
+            'per_minute' => (int) env('ASPIRATIONS_PUBLIC_DETAIL_PER_MINUTE', 30),
+            'per_day' => (int) env('ASPIRATIONS_PUBLIC_DETAIL_PER_DAY', 300),
+            'ip_per_day' => (int) env('ASPIRATIONS_PUBLIC_DETAIL_IP_PER_DAY', 3000),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Deteksi laporan ganda (#11)
     |--------------------------------------------------------------------------
     */

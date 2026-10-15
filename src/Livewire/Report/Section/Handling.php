@@ -6,6 +6,7 @@ namespace Nawasara\Aspirations\Livewire\Report\Section;
 
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Nawasara\Aspirations\Exceptions\WorkflowException;
 use Nawasara\Aspirations\Models\Report;
@@ -29,6 +30,10 @@ use Nawasara\Aspirations\Services\VerifierDirectory;
  */
 class Handling extends Component
 {
+    // #[Locked]: diisi server, tidak pernah ditulis browser. Audit keamanan
+    // 15 Oktober 2026: properti publik yang tidak dikunci dapat diubah lewat
+    // payload Livewire, lalu aksi berikutnya bekerja pada id yang dipalsukan.
+    #[Locked]
     public Report $report;
 
     public string $body = '';

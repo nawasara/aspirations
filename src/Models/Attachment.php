@@ -86,6 +86,20 @@ class Attachment extends Model
     }
 
     /**
+     * Disk tempat berkas ini BENAR-BENAR disimpan.
+     *
+     * Bucket yang TERCATAT pada baris ini, bukan yang sedang disetel di
+     * config. Bila bucket pernah diganti, foto lama tetap harus terbaca dari
+     * tempat ia benar-benar disimpan.
+     */
+    public function storageDisk(): \Illuminate\Contracts\Filesystem\Filesystem
+    {
+        return ($this->disk === 'minio' && $this->bucket && class_exists(MinioDisk::class))
+            ? MinioDisk::make($this->bucket)
+            : Storage::disk($this->disk);
+    }
+
+    /**
      * Presigned URL langsung ke MinIO. Hanya berguna bila MinIO punya alamat
      * publik ber-HTTPS; lihat `storage.public_url` di Vault grup `minio`.
      */
@@ -94,15 +108,7 @@ class Attachment extends Model
         $ttl = (int) config('nawasara-aspirations.storage.url_ttl', 900);
 
         try {
-            // Bucket yang TERCATAT pada baris ini, bukan yang sedang disetel di
-            // config. Bila bucket pernah diganti, foto lama tetap harus terbaca
-            // dari tempat ia benar-benar disimpan.
-            $disk = ($this->disk === 'minio' && $this->bucket
-                && class_exists(MinioDisk::class))
-                    ? MinioDisk::make($this->bucket)
-                    : Storage::disk($this->disk);
-
-            return $disk->temporaryUrl($this->path, now()->addSeconds($ttl));
+            return $this->storageDisk()->temporaryUrl($this->path, now()->addSeconds($ttl));
         } catch (\Throwable) {
             // Disk belum terpasang atau berkas hilang: kembalikan null supaya
             // satu foto rusak tidak menjatuhkan seluruh halaman laporan.

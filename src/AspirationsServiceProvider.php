@@ -3,12 +3,15 @@
 namespace Nawasara\Aspirations;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Nawasara\Aspirations\Console\BackfillDistrictsCommand;
+use Nawasara\Aspirations\Console\StripPhotoMetadataCommand;
 use Nawasara\Aspirations\Contracts\GeocodingProvider;
 use Nawasara\Aspirations\Jobs\AutoCloseJob;
 use Nawasara\Aspirations\Jobs\CheckSlaJob;
@@ -16,6 +19,7 @@ use Nawasara\Aspirations\Jobs\CheckVerificationDueJob;
 use Nawasara\Aspirations\Jobs\SendSlaRemindersJob;
 use Nawasara\Aspirations\Services\Geocoding\GoogleGeocoder;
 use Nawasara\Aspirations\Services\Geocoding\NullGeocoder;
+use Nawasara\Aspirations\Support\CitizenReadLimits;
 use Symfony\Component\Finder\Finder;
 
 class AspirationsServiceProvider extends ServiceProvider
@@ -64,6 +68,8 @@ class AspirationsServiceProvider extends ServiceProvider
         $this->registerLivewire();
         $this->registerPhotoRoute();
         $this->registerPublicRoutes();
+        // Limiter didaftarkan SEBELUM rute warga yang memakainya.
+        $this->registerRateLimiters();
         $this->registerCitizenRoutes();
         $this->registerStaffRoutes();
         $this->registerSchedule();
@@ -127,6 +133,7 @@ class AspirationsServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 BackfillDistrictsCommand::class,
+                StripPhotoMetadataCommand::class,
             ]);
         }
 
@@ -240,6 +247,31 @@ class AspirationsServiceProvider extends ServiceProvider
             ->middleware(['api', 'api.citizen', 'throttle:nawasara-citizen'])
             ->name('nawasara-aspirations.citizen.')
             ->group(__DIR__.'/../routes/citizen.php');
+    }
+
+    /**
+     * Limiter khusus untuk endpoint yang membaca laporan warga LAIN.
+     *
+     * Audit keamanan 15 Oktober 2026, temuan T5: `similar` dapat dipakai
+     * menyapu wilayah, dan kode laporan berurutan dapat ditebak lewat detail
+     * publik. Batasnya di config `rate_limits`; uraiannya di CitizenReadLimits.
+     */
+    protected function registerRateLimiters(): void
+    {
+        foreach (['similar', 'public_detail'] as $kind) {
+            RateLimiter::for("nawasara-aspirations-{$kind}", function (Request $request) use ($kind) {
+                $cfg = (array) config("nawasara-aspirations.rate_limits.{$kind}", []);
+
+                return CitizenReadLimits::build(
+                    "asp-{$kind}",
+                    $request->attributes->get('citizen_sub'),
+                    (string) $request->ip(),
+                    (int) ($cfg['per_minute'] ?? 0),
+                    (int) ($cfg['per_day'] ?? 0),
+                    (int) ($cfg['ip_per_day'] ?? 0),
+                );
+            });
+        }
     }
 
     /**

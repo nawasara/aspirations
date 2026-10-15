@@ -70,10 +70,7 @@ class StaffOpdMemberController
             ]);
         }
 
-        $ids = DB::table('nawasara_registry_memberships')
-            ->where('opd_id', $opdId)
-            ->distinct()
-            ->pluck('user_id');
+        $ids = $this->activeMemberIds($opdId);
 
         if ($ids->isEmpty()) {
             return response()->json(['data' => []]);
@@ -97,7 +94,12 @@ class StaffOpdMemberController
      */
     public function assign(Request $request, int $id): JsonResponse
     {
-        $target = $this->memberOfSameOpd($request, $id);
+        // Hanya anggota AKTIF yang dapat dijadikan verifikator (audit keamanan
+        // 15 Oktober 2026, temuan R6). Anggota nonaktif sudah tidak punya
+        // cakupan OPD di MembershipResolver, jadi peran itu hanya akan
+        // menjadi sisa yang aktif kembali tanpa disadari bila keanggotaannya
+        // dihidupkan.
+        $target = $this->memberOfSameOpd($request, $id, activeOnly: true);
 
         if ($target instanceof JsonResponse) {
             return $target;
@@ -146,7 +148,7 @@ class StaffOpdMemberController
      *
      * @return mixed Model pengguna, atau JsonResponse bila ditolak
      */
-    protected function memberOfSameOpd(Request $request, int $id): mixed
+    protected function memberOfSameOpd(Request $request, int $id, bool $activeOnly = false): mixed
     {
         $opdId = $this->memberships->opdIdFor($request->user());
 
@@ -156,9 +158,13 @@ class StaffOpdMemberController
             ], 403);
         }
 
+        // Pencabutan (`$activeOnly` false) tetap menerima anggota nonaktif:
+        // membersihkan peran verifikator dari pegawai yang sudah dinonaktifkan
+        // justru yang diinginkan.
         $seOpd = DB::table('nawasara_registry_memberships')
             ->where('opd_id', $opdId)
             ->where('user_id', $id)
+            ->when($activeOnly, fn ($q) => $q->where('aktif', true))
             ->exists();
 
         if (! $seOpd) {
@@ -174,6 +180,23 @@ class StaffOpdMemberController
         return $model::findOrFail($id);
     }
 
+    /**
+     * Pengguna dengan keanggotaan AKTIF di OPD ini.
+     *
+     * Audit keamanan 15 Oktober 2026, temuan R6: daftar ini dulu memuat juga
+     * keanggotaan yang sudah dinonaktifkan, sehingga pegawai yang dimutasi
+     * atau pensiun masih dapat dijadikan verifikator. MembershipResolver
+     * sendiri hanya membaca keanggotaan aktif; daftar di sini disamakan.
+     */
+    protected function activeMemberIds(int $opdId): \Illuminate\Support\Collection
+    {
+        return DB::table('nawasara_registry_memberships')
+            ->where('opd_id', $opdId)
+            ->where('aktif', true)
+            ->distinct()
+            ->pluck('user_id');
+    }
+
     protected function isLastVerifier(Request $request, mixed $target): bool
     {
         if (! $target->hasRole(self::VERIFIER_ROLE)) {
@@ -182,10 +205,10 @@ class StaffOpdMemberController
 
         $opdId = $this->memberships->opdIdFor($request->user());
 
-        $ids = DB::table('nawasara_registry_memberships')
-            ->where('opd_id', $opdId)
-            ->distinct()
-            ->pluck('user_id');
+        // Hanya anggota aktif yang dihitung: verifikator nonaktif tidak dapat
+        // memverifikasi apa pun, jadi menghitungnya membiarkan OPD kehilangan
+        // verifikator terakhirnya yang sungguh bekerja.
+        $ids = $this->activeMemberIds($opdId);
 
         $model = config('auth.providers.users.model');
 
