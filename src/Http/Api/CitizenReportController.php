@@ -42,16 +42,37 @@ class CitizenReportController extends Controller
      *
      * Disaring pada `keycloak_sub` dari token, sehingga tidak ada cara meminta
      * laporan warga lain — tidak ada parameter yang bisa diutak-atik.
+     *
+     * `?unrated=1` = laporan selesai yang belum dinilai, PALING LAMA SELESAI
+     * lebih dulu. Dipakai aplikasi saat dibuka untuk memunculkan lembar
+     * penilaian (biasanya `per_page=1`). Penilaian rendah membuka kembali
+     * laporan, jadi warga yang tidak menilai kehilangan satu-satunya cara
+     * memberi tahu pekerjaannya belum beres; laporan yang paling lama
+     * menggantung yang paling perlu ditanyakan.
      */
     public function index(Request $request): JsonResponse
     {
         $sub = $this->citizenSub($request);
 
-        $reports = Report::query()
+        $data = $request->validate([
+            'unrated' => ['sometimes', 'boolean'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $query = Report::query()
             ->where('keycloak_sub', $sub)
-            ->with(['category', 'opd'])
-            ->latest('received_at')
-            ->paginate(20);
+            ->with(['category', 'opd']);
+
+        if ($request->boolean('unrated')) {
+            $query->where('status', Report::STATUS_RESOLVED)
+                ->whereNull('rating')
+                ->orderBy('verified_at')
+                ->orderBy('received_at');
+        } else {
+            $query->latest('received_at');
+        }
+
+        $reports = $query->paginate((int) ($data['per_page'] ?? 20))->withQueryString();
 
         return ReportResource::collection($reports)->response();
     }

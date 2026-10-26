@@ -132,7 +132,7 @@ Privacy filtering for this endpoint lives in one place, `Services\PublicMap`. Se
 | Method | Path |
 |---|---|
 | `GET` | `/api/v1/aspirations/categories` |
-| `GET` | `/api/v1/aspirations/reports` |
+| `GET` | `/api/v1/aspirations/reports` (`?unrated=1` = resolved and not yet rated, oldest first; `per_page` 1–50) |
 | `POST` | `/api/v1/aspirations/reports` |
 | `GET` | `/api/v1/aspirations/reports/similar` |
 | `GET` | `/api/v1/aspirations/reports/feed` |

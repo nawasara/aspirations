@@ -105,6 +105,12 @@ class ReportNotifier
             'template' => $template,
         ];
 
+        // Kotak masuk aplikasi (lonceng) SELALU dicatat, apa pun sakelar push
+        // dan emailnya: justru warga yang mematikan push atau menolak izin
+        // notifikasi yang butuh tempat membaca ulang kabar yang terlewat.
+        // Sakelar warga mengatur kanal yang MENGGANGGU, bukan riwayat.
+        $this->recordInbox($report, $template, $data);
+
         // Push dan email dikirim TERPISAH, masing-masing dengan penjaganya
         // sendiri: Firebase yang belum dikonfigurasi tidak boleh menahan
         // email, dan sebaliknya.
@@ -118,6 +124,34 @@ class ReportNotifier
         if ($this->citizenWants($report, $topic, NotificationPreferences::CHANNEL_EMAIL)) {
             $this->sendEmail($report, $data, $context);
         }
+    }
+
+    /** Kode jenis yang dibaca aplikasi untuk memilih ikon; lihat CitizenNotification. */
+    protected const INBOX_TYPES = [
+        'aspirations.report.in_progress' => 'report_in_progress',
+        'aspirations.report.resolved' => 'report_resolved',
+        'aspirations.report.rejected' => 'report_rejected',
+        'aspirations.report.reopened' => 'report_reopened',
+    ];
+
+    /**
+     * Isi baris kotak masuk sengaja "kode · judul", bukan kalimat panjang
+     * pesan push: judul barisnya sudah menyebut apa yang terjadi, dan warga
+     * dengan beberapa laporan perlu tahu laporan yang mana.
+     */
+    protected function recordInbox(Report $report, string $template, array $data): void
+    {
+        if (! class_exists(\Nawasara\Citizen\Models\CitizenNotification::class)) {
+            return;
+        }
+
+        \Nawasara\Citizen\Models\CitizenNotification::record(
+            (string) $report->keycloak_sub,
+            self::INBOX_TYPES[$template] ?? 'report_update',
+            $data['subject'],
+            $report->code.' · '.$report->title,
+            $report->code,
+        );
     }
 
     /**
