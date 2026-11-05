@@ -289,7 +289,7 @@ Recipients are the active members of the report's OPD:
 | `aspirations.report.respond` | every event |
 | only `aspirations.report.verify` (the Kabid) | "deadline passed" only |
 
-The app team's spec reads "overdue → officer **and their superior**". The verifier is that superior; they do not get the "approaching" warning because they are not the one doing the work, and a warning the recipient cannot act on teaches them to ignore the next one. Switch off with `notify_verifiers_on_overdue`.
+The app team's spec reads "overdue → officer **and their superior**". The verifier is that superior; they do not get the "approaching" warning because they are not the one doing the work, and a warning the recipient cannot act on teaches them to ignore the next one. Admins switch it off on the panel's **Pengaturan** page ("Kabari pemeriksa OPD saat laporan lewat batas waktu"), stored as `aspirations.notify_verifiers_on_overdue` in `nawasara_settings`; the config value below is only the default until someone saves the page. It is a policy call for each Pemkab, not a deploy-time setting.
 
 Configuration (`sla_reminders` in `config/nawasara-aspirations.php`):
 
@@ -300,7 +300,7 @@ Configuration (`sla_reminders` in `config/nawasara-aspirations.php`):
 | `min_window_hours` | `1` (cannot go lower) | `ASPIRATIONS_SLA_REMINDER_MIN_HOURS` |
 | `max_window_hours` | `24` | `ASPIRATIONS_SLA_REMINDER_MAX_HOURS` |
 | `channels` | `['email']` | — |
-| `notify_verifiers_on_overdue` | `true` | `ASPIRATIONS_SLA_REMINDER_NOTIFY_VERIFIERS` |
+| `notify_verifiers_on_overdue` | `true` | `ASPIRATIONS_SLA_REMINDER_NOTIFY_VERIFIERS` (default only; the Pengaturan page overrides it) |
 
 Decisions worth keeping:
 

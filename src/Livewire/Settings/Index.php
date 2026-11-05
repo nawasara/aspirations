@@ -23,11 +23,15 @@ class Index extends Component
     /** @var array<string, int> */
     public array $values = [];
 
+    /** Kabari pemeriksa OPD saat laporan lewat batas waktu. */
+    public bool $notifyVerifiersOnOverdue = true;
+
     public function mount(): void
     {
         $this->authorize('aspirations.category.manage');
 
         $this->values = Settings::all();
+        $this->notifyVerifiersOnOverdue = Settings::notifyVerifiersOnOverdue();
     }
 
     /**
@@ -48,6 +52,7 @@ class Index extends Component
             'values.verification_hours' => ['required', 'integer', 'min:1', 'max:720'],
             'values.auto_close_days' => ['required', 'integer', 'min:1', 'max:90'],
             'values.reopen_threshold' => ['required', 'integer', 'min:1', 'max:5'],
+            'notifyVerifiersOnOverdue' => ['boolean'],
         ];
     }
 
@@ -70,12 +75,14 @@ class Index extends Component
         foreach ($this->values as $key => $value) {
             Settings::put($key, (int) $value);
         }
+        Settings::putBool('notify_verifiers_on_overdue', $this->notifyVerifiersOnOverdue);
 
         // Baca ulang dari sumbernya, jangan percaya isi formulir. Settings::int()
         // menolak nilai <= 0 dan jatuh ke config, jadi yang tersimpan bisa saja
         // berbeda dari yang diketik — menampilkan angka yang diketik akan
         // berbohong tentang apa yang sebenarnya berlaku.
         $this->values = Settings::all();
+        $this->notifyVerifiersOnOverdue = Settings::notifyVerifiersOnOverdue();
 
         $this->dispatch('toast', type: 'success', message: 'Pengaturan tersimpan.');
     }

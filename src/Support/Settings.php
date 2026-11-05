@@ -89,6 +89,15 @@ class Settings
     }
 
     /**
+     * Saat laporan lewat batas waktu, kabari juga pemeriksa OPD-nya (atasan
+     * petugas), bukan hanya petugasnya. Bawaannya hidup.
+     */
+    public static function notifyVerifiersOnOverdue(): bool
+    {
+        return self::bool('notify_verifiers_on_overdue', 'sla_reminders.notify_verifiers_on_overdue', true);
+    }
+
+    /**
      * Semua setelan sekaligus — untuk halaman pengaturan di panel.
      *
      * @return array<string, int>
@@ -113,6 +122,30 @@ class Settings
     public static function put(string $key, int $value): void
     {
         Setting::set('aspirations.'.$key, (string) $value, 'string');
+    }
+
+    /** Simpan satu sakelar. Disimpan sebagai bool, bukan angka. */
+    public static function putBool(string $key, bool $value): void
+    {
+        Setting::set('aspirations.'.$key, $value, 'bool');
+    }
+
+    /**
+     * Baca sakelar: setting DB → config → bawaan.
+     *
+     * Berbeda dari int(): `false` adalah nilai yang SAH, bukan tanda "belum
+     * disetel". Admin yang mematikan sakelar harus tetap mati — hanya baris
+     * yang memang tidak ada yang jatuh ke config.
+     */
+    protected static function bool(string $key, string $configPath, bool $default): bool
+    {
+        $dbValue = Setting::get('aspirations.'.$key);
+
+        if ($dbValue !== null && $dbValue !== '') {
+            return filter_var($dbValue, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return (bool) config('nawasara-aspirations.'.$configPath, $default);
     }
 
     /**

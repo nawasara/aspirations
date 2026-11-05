@@ -2,6 +2,7 @@
 
 namespace Nawasara\Aspirations\Jobs;
 
+use Nawasara\Aspirations\Support\Settings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -102,7 +103,7 @@ class SendSlaRemindersJob implements ShouldQueue
             });
 
         $summary = [];
-        $verifiersOnOverdue = (bool) config('nawasara-aspirations.sla_reminders.notify_verifiers_on_overdue', true);
+        $verifiersOnOverdue = Settings::notifyVerifiersOnOverdue();
 
         foreach ($byOpd as $opdId => $items) {
             $recipients = $this->recipientsFor((int) $opdId);

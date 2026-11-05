@@ -126,6 +126,26 @@
                 </div>
             </x-nawasara-ui::page.card>
 
+            {{-- Peringatan batas waktu ke petugas --}}
+            <x-nawasara-ui::page.card>
+                <h3 class="text-base font-semibold text-neutral-800 dark:text-neutral-100">
+                    Peringatan Batas Waktu
+                </h3>
+                <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                    Petugas selalu diingatkan lewat email menjelang dan saat batas waktu lewat.
+                    Pengaturan ini menentukan siapa lagi yang ikut dikabari.
+                </p>
+
+                <div class="mt-4">
+                    <x-nawasara-ui::form.checkbox wire:model="notifyVerifiersOnOverdue"
+                        label="Kabari pemeriksa OPD saat laporan lewat batas waktu" />
+                    <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                        Pemeriksa (biasanya Kabid) menerima email sekali per laporan yang
+                        terlambat, sebagai atasan petugas. Matikan bila OPD belum siap.
+                    </p>
+                </div>
+            </x-nawasara-ui::page.card>
+
             {{-- Catatan --}}
             <x-nawasara-ui::page.card>
                 <h3 class="text-base font-semibold text-neutral-800 dark:text-neutral-100">
