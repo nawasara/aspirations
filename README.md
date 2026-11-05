@@ -17,6 +17,16 @@ A citizen files a report from their phone. It is dispatched to the responsible d
 - **Content screening.** Flags profanity and slurs for review, never rejects.
 - **Photo evidence.** Stored in MinIO behind short-lived presigned URLs.
 
+## Status (unreleased, after v0.9.12)
+
+| Feature | State |
+|---|---|
+| Evidence photo `caption` (staff upload, staff + citizen resources, panel) | ✅ |
+| `location_source` (`gps` \| `manual`) on report submission | ✅ |
+| SLA warnings: config-driven window, verifier gets overdue, optional Telegram | ✅ |
+| `incident_address` as its own column (still merged into `description` by the app) | ⏳ |
+| Personal Telegram for officers (`users.telegram_chat_id`) | ⏳ needs a core change |
+
 ## Installation
 
 ```bash
@@ -157,6 +167,23 @@ limiters on top of `throttle:nawasara-citizen`, configured under
 `similar` accepts any point, so it is the easiest way to sweep an area, and
 report codes are sequential.
 
+#### `location_source` on `POST /reports`
+
+| Value | Meaning | `location_accuracy` |
+|---|---|---|
+| `gps` | locked when the shutter was pressed | metres, from GPS |
+| `manual` | the citizen pointed at a map | always stored as `null` |
+| *(no point)* | no coordinates at all | `null`; `location_source` is stored `null` too |
+
+Exposed as `location.source` on `ReportResource` (owner) and `StaffReportResource`, and as a badge on the panel detail page. Not on `OthersReportResource`, which carries no coordinates anyway.
+
+Decisions worth keeping (`Support\LocationSource`):
+
+- **Absent means `gps` when there is a point.** Older app builds could only send GPS points (the API contract says the citizen cannot move the pin), so their reports keep reading exactly as before. The migration backfills `gps` on existing rows that have coordinates, for the same reason.
+- **No point means `null`, not `gps`.** "No point" is a third state, not a broken GPS fix; the officer should fall back to the written address.
+- **Accuracy sent with `manual` is discarded, not rejected.** Any number there (0, 999, a map radius) brings back exactly the problem this key solves. Rejecting instead would make a citizen lose a valid report over an app bug.
+- **`manual` without `latitude`/`longitude` is rejected (422).** A pointed location without a point means nothing.
+
 ### Staff (behind `api.staff`)
 
 | Method | Path |
@@ -171,6 +198,14 @@ report codes are sequential.
 | `POST` | `/api/v1/staff/aspirations/reports/{code}/evidence` |
 
 Reports are addressed by their public `code` (`LB-2026-08-0412`), never by id. Sequential ids in a URL invite guessing at other people's reports.
+
+#### Evidence caption
+
+`POST .../{code}/evidence` accepts an optional `caption` (string, max 500), stored on the attachment and returned as `caption` by both `StaffAttachmentResource` and `AttachmentResource`. Before this, the panel already sent it and Laravel dropped the unknown field without an error: the officer saw "photo saved" and the sentence was gone.
+
+- **500 characters, not `text`.** It is an explanatory sentence ("Pengaspalan selesai 24 Oktober, sepanjang 40 meter"), not a report. A firm limit lets the panel count down instead of rejecting at submit.
+- **It is public on purpose.** A photo of a freshly paved road looks like any road; the officer's sentence is what makes it evidence, and citizens read the timeline. It is treated like the officer's response body, which is also shown as written.
+- Blank or whitespace-only captions are stored as `null`.
 
 ## Status flow
 
@@ -245,11 +280,33 @@ None of them change a report's status. Escalation is attention, not resolution: 
 
 ### Deadline reminders to OPD officers
 
-Escalation only raises `escalation_level` after the fact. `SendSlaRemindersJob` emails the officers **before** a deadline, which is what actually prevents lateness. The recipients are the active members of the report's OPD who hold `aspirations.report.respond`. Three events, each sent exactly once per report (`response_warned_at`, `resolution_warned_at`, `overdue_notified_at`): the response deadline is near, the resolution deadline is near, or either one has passed.
+Escalation only raises `escalation_level` after the fact. `SendSlaRemindersJob` warns the officers **before** a deadline, which is what actually prevents lateness. A "deadline passed" notice is late by definition; it is still sent, once, but the approaching warning is the one that matters. Three events, each sent exactly once per report (`response_warned_at`, `resolution_warned_at`, `overdue_notified_at`): the response deadline is near, the resolution deadline is near, or either one has passed.
+
+Recipients are the active members of the report's OPD:
+
+| Holds | Receives |
+|---|---|
+| `aspirations.report.respond` | every event |
+| only `aspirations.report.verify` (the Kabid) | "deadline passed" only |
+
+The app team's spec reads "overdue → officer **and their superior**". The verifier is that superior; they do not get the "approaching" warning because they are not the one doing the work, and a warning the recipient cannot act on teaches them to ignore the next one. Switch off with `notify_verifiers_on_overdue`.
+
+Configuration (`sla_reminders` in `config/nawasara-aspirations.php`):
+
+| Key | Default | Env |
+|---|---|---|
+| `enabled` | `true` | `ASPIRATIONS_SLA_REMINDERS_ENABLED` |
+| `window_share` | `0.25` | `ASPIRATIONS_SLA_REMINDER_SHARE` |
+| `min_window_hours` | `1` (cannot go lower) | `ASPIRATIONS_SLA_REMINDER_MIN_HOURS` |
+| `max_window_hours` | `24` | `ASPIRATIONS_SLA_REMINDER_MAX_HOURS` |
+| `channels` | `['email']` | — |
+| `notify_verifiers_on_overdue` | `true` | `ASPIRATIONS_SLA_REMINDER_NOTIFY_VERIFIERS` |
 
 Decisions worth keeping:
 
-- **The warning window is a quarter of the SLA span, clamped to 1–24 hours** (`SlaReminderPlan`). A fixed "24 hours before" on a 3-hour SLA would warn before the report arrived; "1 hour before" on a 14-day SLA leaves no time to act. The 1-hour floor matches the hourly schedule, since a narrower window can fall between two runs and never fire.
+- **No duplicate sends, by a stable key, not a cooldown.** The key is (report, deadline), stored as the three marker columns on the report row; `eventsFor()` skips any event whose marker is set and `mark()` sets it after the run. A time-based cooldown would re-send every N hours, and cooldown 0 has flooded another channel in this repo before.
+- **The warning window is a quarter of the SLA span, clamped to 1–24 hours** (`SlaReminderPlan`). A fixed "24 hours before" on a 3-hour SLA would warn before the report arrived; "1 hour before" on a 14-day SLA leaves no time to act. The 1-hour floor matches the hourly schedule, since a narrower window can fall between two runs and never fire. Out-of-range config values fall back rather than silently disabling warnings.
+- **Telegram goes to a person, never to the shared alert group.** Adding `'telegram'` to `channels` reaches only users with a `telegram_chat_id`; the `users` table has no such column yet, so today it sends nothing extra. The shared group is read by people outside the OPD, and report titles are written by citizens and can contain names and addresses.
 - **One email per officer per run**, listing every relevant report of their OPD. Ten emails in an hour teach people to stop reading them.
 - **The migration marks reports that were already overdue.** On launch 30 of 34 open reports in production were overdue, many since August. Without that, the first run would have mailed the whole backlog to eight OPDs at once.
 - **Flagged reports are skipped.** They have not reached the OPD yet, so officers cannot see them.

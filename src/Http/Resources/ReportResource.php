@@ -44,6 +44,10 @@ class ReportResource extends JsonResource
             'location' => [
                 'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
                 'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
+                // Pemilik laporan saja (resource ini tidak dikirim ke warga
+                // lain): `gps` | `manual` | null, supaya aplikasi dapat
+                // menulis "titik ditunjuk di peta" pada laporannya sendiri.
+                'source' => $this->location_source,
                 'address' => $this->full_address,
                 'village' => $this->village,
 

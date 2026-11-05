@@ -34,11 +34,35 @@ use Nawasara\Notification\Facades\Notify;
  * relevan, bukan satu email per laporan. Petugas yang menerima sepuluh email
  * dalam sejam berhenti membacanya, dan yang terlewat justru yang mendesak.
  *
- * Penerima: anggota aktif OPD laporan itu yang berizin
- * `aspirations.report.respond`. Laporan tidak punya kolom "petugas
- * penanggung jawab" per orang, jadi seluruh petugas OPD yang dapat
- * menanganinya yang diberi tahu.
+ * Penerima: anggota aktif OPD laporan itu.
  *
+ *   berizin `aspirations.report.respond`   semua peristiwa
+ *   hanya berizin `aspirations.report.verify` hanya "sudah lewat"
+ *
+ * Laporan tidak punya kolom "petugas penanggung jawab" per orang, jadi seluruh
+ * petugas OPD yang dapat menanganinya yang diberi tahu. Pemeriksa (Kabid)
+ * adalah "atasan" dalam permintaan aplikasi ("lewat batas waktu → petugas +
+ * atasannya"); ia tidak diberi peringatan "hampir lewat" karena bukan ia yang
+ * mengerjakan, dan peringatan yang tidak dapat ditindaklanjuti penerimanya
+ * hanya mengajari orang mengabaikannya.
+ *
+ * Kanal: `sla_reminders.channels`, bawaannya email saja. Telegram dapat
+ * ditambahkan, tetapi hanya sampai ke pengguna yang punya `telegram_chat_id`;
+ * yang tidak punya dilewati NotificationService tanpa galat.
+ *
+ * ⚠️ Tidak dikirim ke grup Telegram bersama. Grup itu (topik peringatan
+ * sistem) dibaca orang di luar OPD, dan judul laporan ditulis warga: isinya
+ * dapat memuat nama dan alamat orang.
+ *
+ * ── Tidak mengirim dua kali ──────────────────────────────────────────────
+ *
+ * Satu kolom penanda per (laporan, jenis peristiwa) di tabel laporan. Itulah
+ * kunci dedup-nya, stabil per laporan dan per tenggat, bukan per putaran.
+ * eventsFor() tidak mengembalikan peristiwa yang penandanya sudah terisi, dan
+ * mark() mengisinya setelah putaran mengirim. Tidak ada cooldown berbasis
+ * waktu: cooldown 0 pernah membanjiri kanal lain di repo ini.
+ *
+
  * Laporan yang DITANDAI (`flagged_at`) dilewati: ia belum diteruskan ke OPD,
  * dan petugas tidak dapat melihatnya di panel.
  */
@@ -62,33 +86,40 @@ class SendSlaRemindersJob implements ShouldQueue
     {
         $now = now();
         $byOpd = [];
+        $limits = SlaReminderPlan::limitsFrom((array) config('nawasara-aspirations.sla_reminders', []));
 
         Report::withoutGlobalScopes()
             ->with('category')
             ->whereIn('status', Report::OPEN_STATUSES)
             ->whereNotNull('opd_id')
             ->whereNull('flagged_at')
-            ->chunkById(200, function ($reports) use ($now, &$byOpd) {
+            ->chunkById(200, function ($reports) use ($now, $limits, &$byOpd) {
                 foreach ($reports as $report) {
-                    foreach ($this->eventsFor($report, $now) as $kind) {
+                    foreach ($this->eventsFor($report, $now, $limits) as $kind) {
                         $byOpd[$report->opd_id][] = ['report' => $report, 'kind' => $kind];
                     }
                 }
             });
 
         $summary = [];
+        $verifiersOnOverdue = (bool) config('nawasara-aspirations.sla_reminders.notify_verifiers_on_overdue', true);
 
         foreach ($byOpd as $opdId => $items) {
-            $officers = $this->officersFor((int) $opdId);
+            $recipients = $this->recipientsFor((int) $opdId);
+            $sent = 0;
 
             if (! $this->dryRun) {
-                foreach ($officers as $officer) {
-                    $this->send($officer, $items, $now);
+                foreach ($recipients as ['user' => $user, 'responds' => $responds, 'verifies' => $verifies]) {
+                    $mine = self::itemsForRecipient($items, $responds, $verifies && $verifiersOnOverdue);
+                    if ($mine !== []) {
+                        $this->send($user, $mine, $now);
+                        $sent++;
+                    }
                 }
                 $this->mark($items, $now);
             }
 
-            $summary[] = ['opd_id' => (int) $opdId, 'recipients' => $officers->count(), 'items' => count($items)];
+            $summary[] = ['opd_id' => (int) $opdId, 'recipients' => $this->dryRun ? $recipients->count() : $sent, 'items' => count($items)];
         }
 
         if ($summary !== [] && ! $this->dryRun) {
@@ -98,32 +129,72 @@ class SendSlaRemindersJob implements ShouldQueue
         return $summary;
     }
 
-    /** @return array<int,string> peristiwa yang belum pernah dikirim untuk laporan ini */
-    public function eventsFor(Report $report, \Carbon\CarbonInterface $now): array
+    /**
+     * Peristiwa yang belum pernah dikirim untuk laporan ini.
+     *
+     * "Sudah lewat" diukur terhadap `$now` putaran ini, bukan now() per
+     * laporan, supaya seluruh putaran memakai satu jam yang sama dengan
+     * peringatan "hampir lewat".
+     *
+     * @param  array{share: float, min: float, max: float}|null  $limits
+     * @return array<int,string>
+     */
+    public function eventsFor(Report $report, \Carbon\CarbonInterface $now, ?array $limits = null): array
     {
         $events = [];
         $start = $report->received_at;
 
         if (SlaReminderPlan::shouldWarn($start, $report->response_due_at,
-            $report->first_responded_at !== null, $report->response_warned_at !== null, $now)) {
+            $report->first_responded_at !== null, $report->response_warned_at !== null, $now, $limits)) {
             $events[] = self::KIND_RESPONSE;
         }
 
         if (SlaReminderPlan::shouldWarn($start, $report->sla_due_at,
-            $report->resolution_submitted_at !== null, $report->resolution_warned_at !== null, $now)) {
+            $report->resolution_submitted_at !== null, $report->resolution_warned_at !== null, $now, $limits)) {
             $events[] = self::KIND_RESOLUTION;
         }
 
-        if ($report->overdue_notified_at === null
-            && ($report->isResponseOverdue() || $report->isResolutionOverdue())) {
+        $responseOverdue = $report->first_responded_at === null
+            && $report->response_due_at !== null && $now->greaterThan($report->response_due_at);
+        $resolutionOverdue = $report->resolution_submitted_at === null
+            && $report->sla_due_at !== null && $now->greaterThan($report->sla_due_at);
+
+        if ($report->overdue_notified_at === null && ($responseOverdue || $resolutionOverdue)) {
             $events[] = self::KIND_OVERDUE;
         }
 
         return $events;
     }
 
-    /** Anggota aktif OPD yang berizin menangani laporan. */
-    protected function officersFor(int $opdId): Collection
+    /**
+     * Bagian peringatan yang menjadi urusan seorang penerima.
+     *
+     * Petugas penanganan menerima semuanya; pemeriksa yang tidak menangani
+     * hanya menerima "sudah lewat". Fungsi murni, supaya pembagiannya dapat
+     * diuji tanpa basis data.
+     *
+     * @param  array<int, array{report: Report, kind: string}>  $items
+     * @return array<int, array{report: Report, kind: string}>
+     */
+    public static function itemsForRecipient(array $items, bool $responds, bool $verifiesOverdue): array
+    {
+        if ($responds) {
+            return $items;
+        }
+
+        if ($verifiesOverdue) {
+            return array_values(array_filter($items, fn ($i) => $i['kind'] === self::KIND_OVERDUE));
+        }
+
+        return [];
+    }
+
+    /**
+     * Anggota aktif OPD yang berizin menangani atau memeriksa laporan.
+     *
+     * @return Collection<int, array{user: object, responds: bool, verifies: bool}>
+     */
+    protected function recipientsFor(int $opdId): Collection
     {
         $ids = DB::table('nawasara_registry_memberships')
             ->where('opd_id', $opdId)
@@ -139,8 +210,28 @@ class SendSlaRemindersJob implements ShouldQueue
         return $model::query()
             ->whereIn('id', $ids)
             ->get()
-            ->filter(fn ($user) => $user->email && $user->can('aspirations.report.respond'))
+            ->filter(fn ($user) => $user->email || ($user->telegram_chat_id ?? null))
+            ->map(fn ($user) => [
+                'user' => $user,
+                'responds' => $user->can('aspirations.report.respond'),
+                'verifies' => $user->can('aspirations.report.verify'),
+            ])
+            ->filter(fn ($r) => $r['responds'] || $r['verifies'])
             ->values();
+    }
+
+    /**
+     * Kanal dari config. Nilai kosong atau keliru kembali ke email, supaya
+     * salah ketik di config tidak mematikan peringatan diam-diam.
+     *
+     * @return array<int, string>
+     */
+    public static function channels(mixed $configured): array
+    {
+        $allowed = ['email', 'telegram'];
+        $channels = array_values(array_intersect($allowed, (array) $configured));
+
+        return $channels === [] ? ['email'] : $channels;
     }
 
     /**
@@ -173,7 +264,7 @@ class SendSlaRemindersJob implements ShouldQueue
 
         try {
             Notify::to($officer)
-                ->channel(['email'])
+                ->channel(self::channels(config('nawasara-aspirations.sla_reminders.channels', ['email'])))
                 ->subject($subject)
                 ->body(self::composeBody($items, $now))
                 ->context([

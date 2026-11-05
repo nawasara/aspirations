@@ -76,6 +76,14 @@
                                 <x-nawasara-ui::badge color="warning">Perlu dicek</x-nawasara-ui::badge>
                             @endif
                         </div>
+
+                        @if (! empty($foto['caption']))
+                            {{-- Keterangan petugas. Ditulis petugas, tetapi tetap
+                                 di-escape: {{ }} bukan {!! !!}. --}}
+                            <p class="mt-1 text-xs text-neutral-700 dark:text-neutral-200 break-words">
+                                {{ $foto['caption'] }}
+                            </p>
+                        @endif
                     </div>
                 @endforeach
             </div>

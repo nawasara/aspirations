@@ -44,6 +44,10 @@ class StaffReportResource extends JsonResource
                 // Akurasi ditampilkan supaya petugas tahu seberapa jauh titiknya
                 // dapat dipercaya sebelum berangkat ke lapangan.
                 'accuracy_m' => $this->location_accuracy !== null ? (float) $this->location_accuracy : null,
+                // `gps` | `manual` | null (tanpa titik). `manual` berarti
+                // titik PERKIRAAN warga dari peta: pakai bersama alamat dan
+                // foto, jangan mengandalkan koordinatnya sendirian.
+                'source' => $this->location_source,
             ],
 
             'is_anonymous' => (bool) $this->is_anonymous,

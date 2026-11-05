@@ -79,16 +79,33 @@ class PhotoUploader
      * Simpan foto bukti tindak lanjut.
      *
      * Sumber bebas — lihat catatan kelas. Yang dicatat adalah penandanya.
+     *
+     * `$caption` adalah keterangan petugas, opsional. Ia ikut terbaca warga
+     * lewat linimasa, sama seperti isi tanggapan petugas.
      */
     public function storeEvidencePhoto(
         Report $report,
         Response $response,
         UploadedFile $file,
         string $source = 'unknown',
+        ?string $caption = null,
     ): Attachment {
         $this->assertAcceptable($file);
 
-        return $this->store($report, $file, Attachment::KIND_EVIDENCE, $source, $response);
+        return $this->store($report, $file, Attachment::KIND_EVIDENCE, $source, $response, self::normalizeCaption($caption));
+    }
+
+    /**
+     * Keterangan kosong atau berisi spasi saja disimpan sebagai NULL.
+     *
+     * Panel mengirim kolom isiannya meski tidak diisi; tanpa ini linimasa
+     * menggambar wadah keterangan kosong di bawah foto.
+     */
+    public static function normalizeCaption(?string $caption): ?string
+    {
+        $caption = $caption === null ? '' : trim($caption);
+
+        return $caption === '' ? null : $caption;
     }
 
     protected function store(
@@ -97,6 +114,7 @@ class PhotoUploader
         string $kind,
         string $source,
         ?Response $response = null,
+        ?string $caption = null,
     ): Attachment {
         $disk = (string) config('nawasara-aspirations.storage.disk', 'minio');
         $bucket = (string) config('nawasara-aspirations.storage.bucket') ?: null;
@@ -164,6 +182,7 @@ class PhotoUploader
 
             'kind' => $kind,
             'source' => $source,
+            'caption' => $caption,
 
             // ⚠️ NULL berarti TIDAK DIKETAHUI, bukan mencurigakan. WhatsApp
             // membuang EXIF, dan banyak ponsel mematikan penandaan lokasi.

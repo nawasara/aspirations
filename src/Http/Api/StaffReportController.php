@@ -171,10 +171,7 @@ class StaffReportController extends Controller
     {
         $this->authorize('aspirations.report.respond');
 
-        $data = $request->validate([
-            'photo' => ['required', 'file', 'image'],
-            'source' => ['nullable', 'string', 'in:camera,gallery,unknown'],
-        ]);
+        $data = $request->validate(self::evidenceRules(), self::evidenceMessages());
 
         $report = Report::where('code', $code)->first();
 
@@ -189,12 +186,21 @@ class StaffReportController extends Controller
             ->latest('id')
             ->first();
 
+        // Tanpa tanggapan, storeEvidencePhoto() menerima null dan melempar
+        // TypeError: petugas melihat galat 500 tanpa tahu sebabnya.
+        if (! $response) {
+            return response()->json([
+                'error' => ['code' => 'response_required', 'message' => 'Tulis tanggapan lebih dulu, lalu lampirkan foto buktinya.'],
+            ], 422);
+        }
+
         try {
             $this->photos->storeEvidencePhoto(
                 $report,
                 $response,
                 $request->file('photo'),
                 $data['source'] ?? 'unknown',
+                $data['caption'] ?? null,
             );
         } catch (SubmissionException $e) {
             return response()->json([
@@ -205,6 +211,36 @@ class StaffReportController extends Controller
         $report->load(['category', 'opd', 'attachments']);
 
         return (new StaffReportResource($report))->response();
+    }
+
+    /**
+     * Aturan unggah foto bukti.
+     *
+     * `caption` ditulis petugas dan opsional. Sebelum aturan ini ada, panel
+     * sudah mengirimkannya dan Laravel membuangnya tanpa galat: petugas melihat
+     * "foto tersimpan" sementara kalimatnya lenyap. Maksimal 500, sama dengan
+     * kolomnya, supaya panel dapat menghitung mundur sisa karakter.
+     *
+     * Dipisah supaya dapat diuji tanpa basis data.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function evidenceRules(): array
+    {
+        return [
+            'photo' => ['required', 'file', 'image'],
+            'source' => ['nullable', 'string', 'in:camera,gallery,unknown'],
+            'caption' => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function evidenceMessages(): array
+    {
+        return [
+            'caption.max' => 'Keterangan foto paling banyak 500 karakter.',
+            'caption.string' => 'Keterangan foto harus berupa teks.',
+        ];
     }
 
     /**

@@ -48,7 +48,7 @@ class Photos extends Component
      * foto yang lenyap adalah hal yang perlu diketahui staf, bukan
      * disembunyikan darinya.
      *
-     * @return array<string, array<int, array{url: ?string, at: ?string, suspect: bool, source: ?string}>>
+     * @return array<string, array<int, array{url: ?string, at: ?string, suspect: bool, source: ?string, caption: ?string}>>
      */
     #[Computed]
     public function groups(): array
@@ -73,6 +73,7 @@ class Photos extends Component
                 'at' => $row->captured_at?->translatedFormat('d M Y, H:i'),
                 'suspect' => $row->isSuspect(),
                 'source' => $row->source,
+                'caption' => $row->caption,
             ];
         }
 

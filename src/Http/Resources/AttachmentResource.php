@@ -27,6 +27,14 @@ class AttachmentResource extends JsonResource
             // atau disk belum terpasang — satu foto rusak tidak boleh
             // menjatuhkan seluruh halaman laporan.
             'url' => $this->temporaryUrl(),
+
+            // Keterangan petugas pada foto bukti; null untuk foto warga dan
+            // foto bukti lama. Ini SENGAJA ikut ke warga: foto jalan yang sudah
+            // diaspal tampak seperti foto jalan biasa, dan kalimat petugas
+            // yang membuatnya menjadi bukti. Diperlakukan sama dengan isi
+            // tanggapan petugas di ResponseResource, yang juga tampil apa
+            // adanya.
+            'caption' => $this->caption,
         ];
     }
 }

@@ -20,6 +20,10 @@ class StaffAttachmentResource extends JsonResource
             'kind' => $this->kind,
             'url' => $this->temporaryUrl(),
 
+            // Keterangan petugas: bahan utama Kabid yang memeriksa dari layar,
+            // bukan dari lapangan. Null bila tidak diisi.
+            'caption' => $this->caption,
+
             // Penanda, BUKAN blokir (D2). Foto bukti boleh dari galeri —
             // petugas bisa saja mengunggah dari kantor karena sinyal buruk di
             // lapangan, dan memblokirnya akan menghukum orang yang bekerja

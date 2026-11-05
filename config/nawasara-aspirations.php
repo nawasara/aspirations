@@ -379,5 +379,30 @@ return [
     */
     'sla_reminders' => [
         'enabled' => env('ASPIRATIONS_SLA_REMINDERS_ENABLED', true),
+
+        // Jendela "hampir lewat" = window_share × rentang SLA, dibatasi
+        // min..max jam. Bawaannya seperempat, 1–24 jam: SLA 72 jam
+        // diperingatkan 18 jam sebelumnya, SLA 14 hari sehari sebelumnya,
+        // SLA 3 jam sejam sebelumnya. Lihat Support\SlaReminderPlan.
+        //
+        // ⚠️ min_window_hours tidak dapat di bawah 1: job berjalan tiap jam,
+        // dan jendela yang lebih sempit dapat jatuh di antara dua putaran
+        // sehingga peringatannya tidak pernah terkirim. Nilai lebih kecil
+        // dinaikkan ke 1, share di luar (0, 1] kembali ke 0,25.
+        'window_share' => (float) env('ASPIRATIONS_SLA_REMINDER_SHARE', 0.25),
+        'min_window_hours' => (float) env('ASPIRATIONS_SLA_REMINDER_MIN_HOURS', 1),
+        'max_window_hours' => (float) env('ASPIRATIONS_SLA_REMINDER_MAX_HOURS', 24),
+
+        // Kanal: 'email' dan/atau 'telegram'. Telegram hanya sampai ke
+        // pengguna yang punya `telegram_chat_id`; tabel users saat ini belum
+        // punya kolom itu, jadi menambahkannya di sini belum mengirim apa pun.
+        // Sengaja BUKAN grup Telegram bersama: judul laporan ditulis warga
+        // dan dapat memuat nama serta alamat orang.
+        'channels' => ['email'],
+
+        // "Sudah lewat" juga dikirim ke pemeriksa (Kabid) se-OPD yang tidak
+        // menangani laporan. Peringatan "hampir lewat" tidak, karena bukan
+        // ia yang mengerjakan.
+        'notify_verifiers_on_overdue' => env('ASPIRATIONS_SLA_REMINDER_NOTIFY_VERIFIERS', true),
     ],
 ];

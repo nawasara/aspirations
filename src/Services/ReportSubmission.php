@@ -9,6 +9,7 @@ use Nawasara\Aspirations\Exceptions\SubmissionException;
 use Nawasara\Aspirations\Jobs\GeocodeReportJob;
 use Nawasara\Aspirations\Models\Category;
 use Nawasara\Aspirations\Models\Report;
+use Nawasara\Aspirations\Support\LocationSource;
 use Nawasara\Aspirations\Support\ReportCode;
 use Nawasara\Aspirations\Support\Settings;
 
@@ -57,7 +58,16 @@ class ReportSubmission
         // persis, bukan dari now() yang dipanggil berkali-kali.
         $receivedAt = now();
 
-        return DB::transaction(function () use ($keycloakSub, $data, $category, $receivedAt) {
+        // Asal titik dan akurasinya ditentukan bersama: akurasi pada titik
+        // tunjukan dibuang, dan laporan tanpa titik tidak bersumber apa pun.
+        $location = LocationSource::normalize(
+            $data['location_source'] ?? null,
+            $data['latitude'] ?? null,
+            $data['longitude'] ?? null,
+            $data['location_accuracy'] ?? null,
+        );
+
+        return DB::transaction(function () use ($keycloakSub, $data, $category, $receivedAt, $location) {
             $report = new Report([
                 // ⚠️ SELALU terisi, termasuk saat is_anonymous = true. "Anonim"
                 // menyembunyikan NAMA di tampilan, bukan membuat pelapor tak
@@ -73,7 +83,8 @@ class ReportSubmission
                 'description' => $data['description'],
                 'latitude' => $data['latitude'] ?? null,
                 'longitude' => $data['longitude'] ?? null,
-                'location_accuracy' => $data['location_accuracy'] ?? null,
+                'location_accuracy' => $location['accuracy'],
+                'location_source' => $location['source'],
 
                 // #13 — dua waktu yang berbeda. Laporan mode luring dibuat
                 // Senin dan sampai Rabu; keduanya disimpan agar kebijakan SLA

@@ -208,6 +208,14 @@
                             {{ trim(($report->village ?? '').' · '.($report->district_name ?? ''), ' ·') }}
                         </span>
                     @endif
+
+                    @if ($report->location_source === \Nawasara\Aspirations\Support\LocationSource::MANUAL)
+                        {{-- Titik tunjukan warga, bukan GPS: perkiraan. Petugas
+                             perlu tahu sebelum berangkat ke koordinatnya. --}}
+                        <span class="mt-1 block">
+                            <x-nawasara-ui::badge color="warning">Titik ditunjuk warga di peta</x-nawasara-ui::badge>
+                        </span>
+                    @endif
                 </dd>
             </div>
         </dl>

@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Nawasara\Aspirations\Exceptions\SubmissionException;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Nawasara\Aspirations\Http\Resources\FeedReportResource;
@@ -19,6 +20,7 @@ use Nawasara\Aspirations\Services\DuplicateDetector;
 use Nawasara\Aspirations\Services\PhotoUploader;
 use Nawasara\Aspirations\Services\PublicMap;
 use Nawasara\Aspirations\Services\ReportSubmission;
+use Nawasara\Aspirations\Support\LocationSource;
 use Nawasara\Aspirations\Support\Settings;
 
 /**
@@ -121,13 +123,11 @@ class CitizenReportController extends Controller
             'category_id' => ['required', 'uuid', 'exists:nawasara_aspirations_categories,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:'.$max],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'location_accuracy' => ['nullable', 'numeric', 'min:0'],
+            ...self::locationRules(),
             'is_anonymous' => ['nullable', 'boolean'],
             // Waktu pembuatan di ponsel — untuk laporan mode luring (#13).
             'created_at_device' => ['nullable', 'date'],
-        ]);
+        ], self::storeMessages());
 
         try {
             $report = $this->submission->submit($sub, $data);
@@ -445,6 +445,46 @@ class CitizenReportController extends Controller
         return ($sub !== '' && $report->keycloak_sub === $sub)
             ? new ReportResource($report)
             : new OthersReportResource($report);
+    }
+
+    /**
+     * Aturan lokasi pada `POST /aspirations/reports`.
+     *
+     * `location_source`: `gps` | `manual`. Tidak dikirim berarti `gps` bila ada
+     * titik, supaya aplikasi versi lama tetap terbaca seperti sebelumnya.
+     * `manual` menuntut titiknya (tunjukan tanpa titik tidak bermakna), dan
+     * akurasinya dibuang di ReportSubmission; lihat Support\LocationSource.
+     *
+     * Dipisah dari store() supaya dapat diuji tanpa basis data.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public static function locationRules(): array
+    {
+        return [
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_if:location_source,manual'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_if:location_source,manual'],
+            'location_accuracy' => ['nullable', 'numeric', 'min:0'],
+            'location_source' => ['nullable', 'string', Rule::in(LocationSource::ALL)],
+        ];
+    }
+
+    /**
+     * Pesan validasi untuk kunci lokasi, dalam bahasa warga.
+     *
+     * Hanya aturan baru yang diberi pesan sendiri. Berkas `lang/` belum ada
+     * di aplikasi, jadi tanpa ini yang terbaca "The selected location source
+     * is invalid.".
+     *
+     * @return array<string, string>
+     */
+    public static function storeMessages(): array
+    {
+        return [
+            'location_source.in' => 'Asal lokasi harus gps atau manual.',
+            'latitude.required_if' => 'Titik yang ditunjuk di peta wajib menyertakan lintang dan bujur.',
+            'longitude.required_if' => 'Titik yang ditunjuk di peta wajib menyertakan lintang dan bujur.',
+        ];
     }
 
     protected function notFoundJson(): JsonResponse
