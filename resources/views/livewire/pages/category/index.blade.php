@@ -33,7 +33,7 @@
                  {{ $table }}, bukan slot bawaan — <tr> yang ditulis langsung
                  di dalam komponen tidak akan muncul sama sekali, sementara
                  header dan penghitung tetap tampil seolah semuanya baik. --}}
-            <x-nawasara-ui::table :headers="['Kategori', 'Kode', 'OPD Tujuan', 'Batas Waktu', 'Foto Bukti', 'Status', '']">
+            <x-nawasara-ui::table :headers="['Kategori', 'Kode', 'OPD Tujuan', 'Batas Waktu', 'Foto Bukti', '']">
                 <x-slot:table>
                 @foreach ($categories as $category)
                     <tr wire:key="cat-{{ $category->id }}">
@@ -46,6 +46,17 @@
                                     {{ $category->hint }}
                                 </div>
                             @endif
+                            {{-- Status di bawah nama, bukan kolom sendiri: terlihat tanpa menggulir ke kanan. --}}
+                            <div class="mt-1">
+                                @if ($category->is_active)
+                                    <x-nawasara-ui::badge color="success">aktif</x-nawasara-ui::badge>
+                                @else
+                                    <x-nawasara-ui::badge color="neutral">nonaktif</x-nawasara-ui::badge>
+                                @endif
+                                @if ($category->is_sensitive)
+                                    <x-nawasara-ui::badge color="warning">sensitif</x-nawasara-ui::badge>
+                                @endif
+                            </div>
                         </td>
 
                         <td class="px-6 py-4">
@@ -71,17 +82,6 @@
                                 <x-nawasara-ui::badge color="info">wajib</x-nawasara-ui::badge>
                             @else
                                 <span class="text-xs text-neutral-500 dark:text-neutral-400">tidak wajib</span>
-                            @endif
-                        </td>
-
-                        <td class="px-6 py-4 text-sm">
-                            @if ($category->is_active)
-                                <x-nawasara-ui::badge color="success">aktif</x-nawasara-ui::badge>
-                            @else
-                                <x-nawasara-ui::badge color="neutral">nonaktif</x-nawasara-ui::badge>
-                            @endif
-                            @if ($category->is_sensitive)
-                                <x-nawasara-ui::badge color="warning">sensitif</x-nawasara-ui::badge>
                             @endif
                         </td>
 

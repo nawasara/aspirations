@@ -99,7 +99,7 @@
         {{-- ⚠️ Baris WAJIB di <x-slot:table> — tanpa itu header tergambar,
              jumlahnya benar, dan barisnya kosong tanpa galat apa pun. --}}
         <x-nawasara-ui::table
-            :headers="['Kode', 'Judul', 'Kategori', 'OPD', 'Kecamatan', 'Status', 'Batas Waktu', 'Dikirim', '']"
+            :headers="['Kode', 'Judul', 'Kategori', 'OPD', 'Kecamatan', 'Batas Waktu', 'Dikirim', '']"
             stickyLast>
             <x-slot:table>
                 @foreach ($reports as $report)
@@ -112,6 +112,11 @@
                                 class="text-emerald-700 transition hover:underline dark:text-emerald-400">
                                 {{ $report->code }}
                             </a>
+                            {{-- Status di bawah nama, bukan kolom sendiri: terlihat tanpa menggulir ke kanan. --}}
+                            <div class="mt-1">
+                                @php($meta = $statusMeta[$report->status] ?? [$report->status, 'neutral'])
+                                <x-nawasara-ui::badge :color="$meta[1]">{{ $meta[0] }}</x-nawasara-ui::badge>
+                            </div>
                         </td>
 
                         <td class="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-200">
@@ -135,11 +140,6 @@
 
                         <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-300">
                             {{ $report->district_name ?? '—' }}
-                        </td>
-
-                        <td class="px-6 py-4 text-sm">
-                            @php($meta = $statusMeta[$report->status] ?? [$report->status, 'neutral'])
-                            <x-nawasara-ui::badge :color="$meta[1]">{{ $meta[0] }}</x-nawasara-ui::badge>
                         </td>
 
                         <td class="px-6 py-4 text-sm">
