@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Nawasara\Aspirations\Http\Api\StaffDashboardController;
+use Nawasara\Aspirations\Http\Api\StaffMemberRequestController;
 use Nawasara\Aspirations\Http\Api\StaffOpdMemberController;
 use Nawasara\Aspirations\Http\Api\StaffReportController;
 use Nawasara\Aspirations\Http\Api\StaffVerifierController;
@@ -48,6 +49,10 @@ Route::middleware(PermissionMiddleware::using('aspirations.verifier.manage'))->g
     Route::get('/opd/members', [StaffOpdMemberController::class, 'index'])->name('opd.members.index');
     Route::post('/opd/members/{id}/verifier', [StaffOpdMemberController::class, 'assign'])->name('opd.members.verifier.assign');
     Route::delete('/opd/members/{id}/verifier', [StaffOpdMemberController::class, 'revoke'])->name('opd.members.verifier.revoke');
+
+    // Ajukan petugas baru — DISETUJUI admin Registry di Nawasara, bukan di sini.
+    Route::get('/opd/member-requests', [StaffMemberRequestController::class, 'index'])->name('opd.member-requests.index');
+    Route::post('/opd/member-requests', [StaffMemberRequestController::class, 'store'])->name('opd.member-requests.store');
 });
 
 // Ringkasan dashboard — satu permintaan, bukan 30.
