@@ -98,6 +98,27 @@ class PermissionSeeder extends Seeder
                 'aspirations.report.respond',
                 'aspirations.report.verify',
             ],
+
+            // Admin OPD: menetapkan dan mencabut Kabid pemeriksa di OPD-nya
+            // sendiri lewat halaman "Kelola Pemeriksa" panel (15 Nov 2026).
+            //
+            // Sebelumnya `verifier.manage` hanya dimiliki `developer`, sehingga
+            // halaman itu menjawab 403 kepada semua orang di OPD dan setiap
+            // mutasi Kabid tetap menjadi tiket ke tim pusat — persis yang
+            // hendak dihindari StaffOpdMemberController.
+            //
+            // `respond` ikut: admin OPD sering meneruskan laporan yang dimulai
+            // petugasnya. TIDAK diberi `verify` — admin bukan pemeriksa; bila
+            // ia juga Kabid, berikan kedua peran.
+            //
+            // Cakupan tetap aman: endpoint dibatasi ke OPD pemegang izin oleh
+            // MembershipResolver, dan hanya peran `lapor-opd-kabid` yang dapat
+            // diberikan. Penautan pegawai ke OPD tetap milik admin Registry.
+            'lapor-opd-admin' => [
+                'aspirations.report.view',
+                'aspirations.report.respond',
+                'aspirations.verifier.manage',
+            ],
         ];
 
         foreach ($roles as $name => $granted) {

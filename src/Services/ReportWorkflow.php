@@ -80,6 +80,45 @@ class ReportWorkflow
      * bisa "memenuhi SLA" tanpa sepatah kata pun kepada warga: angkanya
      * tercapai, maksudnya lewat.
      */
+    /**
+     * Catatan internal antar-petugas — tanpa perpindahan status (15 Nov 2026).
+     *
+     * Koordinasi petugas dan Kabid sebelumnya terjadi di luar sistem (WA,
+     * telepon), sehingga jejak "kenapa laporan ini lama" tidak ada di mana pun.
+     * Kolom `is_internal` sudah ada sejak awal; yang belum ada hanya jalannya.
+     *
+     * Disimpan `is_internal = true`: CitizenReportController memuat tanggapan
+     * lewat scope `public()`, jadi catatan ini TIDAK PERNAH sampai ke warga, dan
+     * tidak ada notifikasi yang dikirim. status_from = status_to = status kini,
+     * supaya linimasa staf tetap tahu di tahap mana catatan itu ditulis.
+     *
+     * TIDAK mengisi first_responded_at: SLA tanggapan diukur dari kalimat yang
+     * terlihat warga, dan catatan internal bukan itu.
+     */
+    public function addInternalNote(Report $report, Authenticatable $actor, string $body): Report
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            throw new WorkflowException('Catatan internal tidak boleh kosong.');
+        }
+
+        if (in_array($report->status, [Report::STATUS_RESOLVED, Report::STATUS_REJECTED], true)) {
+            throw new WorkflowException('Laporan yang sudah ditutup tidak dapat diberi catatan baru.');
+        }
+
+        Response::create([
+            'report_id' => $report->id,
+            'user_id' => $actor->getAuthIdentifier(),
+            'status_from' => $report->status,
+            'status_to' => $report->status,
+            'body' => $body,
+            'is_internal' => true,
+        ]);
+
+        return $report->refresh();
+    }
+
     public function startWork(Report $report, Authenticatable $actor, string $body): Report
     {
         return $this->transition($report, Report::STATUS_IN_PROGRESS, $actor, $body, function (Report $r) use ($actor) {

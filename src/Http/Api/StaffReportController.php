@@ -106,6 +106,20 @@ class StaffReportController extends Controller
         return (new StaffReportResource($report))->response();
     }
 
+    /**
+     * Catatan internal antar-petugas. Tidak mengubah status, tidak terlihat
+     * warga, tidak mengirim notifikasi — lihat ReportWorkflow::addInternalNote.
+     */
+    public function addNote(Request $request, string $code): JsonResponse
+    {
+        $this->authorize('aspirations.report.respond');
+
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        return $this->run($code, fn (Report $r) => $this->workflow
+            ->addInternalNote($r, $request->user(), $data['body']));
+    }
+
     /** Staf mulai mengerjakan — mengisi first_responded_at (response time). */
     public function startWork(Request $request, string $code): JsonResponse
     {

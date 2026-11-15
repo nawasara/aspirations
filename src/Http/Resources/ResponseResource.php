@@ -20,6 +20,11 @@ class ResponseResource extends JsonResource
             'status' => $this->status_to,
             'body' => $this->body,
 
+            // Catatan antar-petugas. Warga tidak pernah menerimanya —
+            // CitizenReportController memuat scope public() — jadi bagi warga
+            // nilai ini selalu false; panel staf memakainya untuk menandai.
+            'internal' => (bool) $this->is_internal,
+
             // Nama dinas, bukan nama orangnya. Petugas berhak atas privasinya;
             // yang perlu warga tahu adalah unit mana yang menangani.
             'by' => $this->whenLoaded('user', fn () => $this->user?->name),
