@@ -120,6 +120,46 @@ class StaffReportController extends Controller
             ->addInternalNote($r, $request->user(), $data['body']));
     }
 
+    /**
+     * Alihkan laporan ke OPD lain — lihat ReportWorkflow::reroute.
+     *
+     * Setelah berhasil, laporan biasanya tidak lagi terlihat oleh pengalihnya
+     * (sudah milik OPD lain). Jawaban tetap memuat laporan yang baru dialihkan,
+     * supaya panel dapat menampilkan konfirmasi sebelum kembali ke daftar.
+     */
+    public function reroute(Request $request, string $code): JsonResponse
+    {
+        $this->authorize('aspirations.report.reassign');
+
+        $data = $request->validate([
+            'opd_id' => ['required', 'integer', 'exists:nawasara_registry_opd,id'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $target = \Nawasara\Registry\Models\Opd::findOrFail($data['opd_id']);
+
+        return $this->run($code, fn (Report $r) => $this->workflow
+            ->reroute($r, $request->user(), $target, $data['reason']));
+    }
+
+    /**
+     * Daftar OPD tujuan pengalihan.
+     *
+     * Endpoint registry `/opd` memakai token aplikasi, bukan token staf
+     * Keycloak yang dibawa panel, jadi daftar ini disediakan di jalur staf.
+     */
+    public function opds(Request $request): JsonResponse
+    {
+        $this->authorize('aspirations.report.reassign');
+
+        $opds = \Nawasara\Registry\Models\Opd::query()
+            ->orderBy('name')
+            ->get(['id', 'code', 'name'])
+            ->map(fn ($o) => ['id' => $o->id, 'code' => $o->code, 'name' => $o->name]);
+
+        return response()->json(['data' => $opds]);
+    }
+
     /** Staf mulai mengerjakan — mengisi first_responded_at (response time). */
     public function startWork(Request $request, string $code): JsonResponse
     {

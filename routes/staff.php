@@ -36,6 +36,10 @@ Route::post('/reports/{code}/evidence', [StaffReportController::class, 'uploadEv
 // Catatan internal antar-petugas: tanpa perpindahan status, tak terlihat warga.
 Route::post('/reports/{code}/notes', [StaffReportController::class, 'addNote'])->name('reports.notes');
 
+// Alihkan laporan salah tujuan ke OPD lain (admin OPD & Kabid).
+Route::post('/reports/{code}/reroute', [StaffReportController::class, 'reroute'])->name('reports.reroute');
+Route::get('/opds', [StaffReportController::class, 'opds'])->name('opds');
+
 // Pengelolaan verifikator oleh admin OPD sendiri.
 //
 // Digerbang izin `aspirations.verifier.manage` DAN dibatasi ke OPD pemegangnya

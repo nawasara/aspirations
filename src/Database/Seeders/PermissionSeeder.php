@@ -22,6 +22,11 @@ class PermissionSeeder extends Seeder
 
             // Admin Kabupaten — perkecualian saja, bukan pintu masuk.
             'aspirations.report.reject',
+
+            // Alihkan laporan ke OPD lain (laporan salah tujuan). Sejak 15 Nov
+            // 2026 juga dipegang admin OPD dan Kabid — keputusan Pringgo —
+            // lewat ReportWorkflow::reroute(): SLA tidak dimulai ulang, warga
+            // diberi tahu, alasan disimpan sebagai catatan internal.
             'aspirations.report.reassign',
 
             // Membuka identitas pelapor anonim. HANYA Inspektorat, dan setiap
@@ -97,6 +102,7 @@ class PermissionSeeder extends Seeder
                 'aspirations.report.view',
                 'aspirations.report.respond',
                 'aspirations.report.verify',
+                'aspirations.report.reassign',
             ],
 
             // Admin OPD: menetapkan dan mencabut Kabid pemeriksa di OPD-nya
@@ -117,6 +123,7 @@ class PermissionSeeder extends Seeder
             'lapor-opd-admin' => [
                 'aspirations.report.view',
                 'aspirations.report.respond',
+                'aspirations.report.reassign',
                 'aspirations.verifier.manage',
             ],
         ];

@@ -51,6 +51,7 @@ class ReportNotifier
     protected const TOPICS = [
         'aspirations.report.in_progress' => NotificationPreferences::REPORT_PROGRESS,
         'aspirations.report.reopened' => NotificationPreferences::REPORT_PROGRESS,
+        'aspirations.report.rerouted' => NotificationPreferences::REPORT_PROGRESS,
         'aspirations.report.resolved' => NotificationPreferences::REPORT_RESULT,
         'aspirations.report.rejected' => NotificationPreferences::REPORT_RESULT,
     ];
@@ -73,6 +74,21 @@ class ReportNotifier
         $this->dispatchNotification($report, $template, [
             'subject' => $this->subjectFor($newStatus),
             'body' => $this->bodyFor($report, $newStatus),
+        ]);
+    }
+
+    /**
+     * Laporan dialihkan ke OPD lain (15 Nov 2026).
+     *
+     * Warga diberi tahu karena pihak yang menangani berganti; tanpa kabar ini
+     * ia akan menagih ke dinas yang sudah tidak memegang laporannya. Alasan
+     * pengalihan TIDAK disertakan — itu catatan internal antar-dinas.
+     */
+    public function rerouted(Report $report, string $opdName): void
+    {
+        $this->dispatchNotification($report, 'aspirations.report.rerouted', [
+            'subject' => 'Laporan Anda diteruskan',
+            'body' => "Laporan {$report->code} diteruskan ke {$opdName} agar ditangani dinas yang berwenang.",
         ]);
     }
 
@@ -132,6 +148,8 @@ class ReportNotifier
         'aspirations.report.resolved' => 'report_resolved',
         'aspirations.report.rejected' => 'report_rejected',
         'aspirations.report.reopened' => 'report_reopened',
+        // Aplikasi yang belum mengenal jenis ini jatuh ke ikon bawaan.
+        'aspirations.report.rerouted' => 'report_rerouted',
     ];
 
     /**

@@ -119,6 +119,85 @@ class ReportWorkflow
         return $report->refresh();
     }
 
+    /**
+     * Alihkan laporan ke OPD lain — laporan salah tujuan (15 Nov 2026).
+     *
+     * Keputusan Pringgo (15 Nov 2026):
+     * - Yang boleh: admin OPD dan Kabid (izin `aspirations.report.reassign`).
+     * - SLA TIDAK dimulai ulang: `sla_due_at` dibiarkan. Kalau dimulai ulang,
+     *   pengalihan menjadi cara menghindari tenggat, dan warga yang menunggu
+     *   tidak peduli dinas mana yang salah menerima.
+     * - Warga diberi tahu (ReportNotifier::rerouted), tanpa alasannya.
+     *
+     * Hanya dari `dispatched` dan `in_progress`. Laporan yang menunggu
+     * pemeriksaan sudah dikerjakan; yang sudah ditutup tidak boleh berpindah.
+     *
+     * Di OPD tujuan laporan mulai lagi dari `dispatched`, dengan petugas dan
+     * Kabid dikosongkan: orang dari dinas lama tidak berwenang di dinas baru.
+     * Alasan pengalihan disimpan sebagai catatan INTERNAL, supaya dinas tujuan
+     * tahu kenapa laporan ini sampai kepadanya.
+     */
+    public function reroute(Report $report, Authenticatable $actor, \Nawasara\Registry\Models\Opd $target, string $reason): Report
+    {
+        $reason = trim($reason);
+
+        if ($reason === '') {
+            throw new WorkflowException('Alasan pengalihan wajib diisi.');
+        }
+
+        $from = $report->status;
+
+        if (! in_array($from, [Report::STATUS_DISPATCHED, Report::STATUS_IN_PROGRESS], true)) {
+            throw new WorkflowException('Hanya laporan yang belum diserahkan ke Kabid yang dapat dialihkan.');
+        }
+
+        if ((int) $report->opd_id === (int) $target->id) {
+            throw new WorkflowException('Laporan sudah berada di OPD tersebut.');
+        }
+
+        $oldOpdName = $report->opd?->name ?? 'OPD sebelumnya';
+
+        return DB::transaction(function () use ($report, $actor, $target, $reason, $from, $oldOpdName) {
+            $report->opd_id = $target->id;
+            $report->status = Report::STATUS_DISPATCHED;
+            $report->responded_by = null;
+            $report->verifier_id = null;
+            $report->save();
+
+            Response::create([
+                'report_id' => $report->id,
+                'user_id' => $actor->getAuthIdentifier(),
+                'status_from' => $from,
+                'status_to' => Report::STATUS_DISPATCHED,
+                'body' => "Laporan Anda diteruskan ke {$target->name} agar ditangani dinas yang berwenang.",
+                'is_internal' => false,
+            ]);
+
+            Response::create([
+                'report_id' => $report->id,
+                'user_id' => $actor->getAuthIdentifier(),
+                'status_from' => Report::STATUS_DISPATCHED,
+                'status_to' => Report::STATUS_DISPATCHED,
+                'body' => "Dialihkan dari {$oldOpdName} ke {$target->name}. Alasan: {$reason}",
+                'is_internal' => true,
+            ]);
+
+            activity('aspirations')
+                ->performedOn($report)
+                ->causedBy($actor)
+                ->withProperties(['dari_opd' => $oldOpdName, 'ke_opd' => $target->name, 'alasan' => $reason])
+                ->log('Laporan dialihkan ke OPD lain');
+
+            // refresh() memakai kueri TANPA global scope, jadi tetap jalan meski
+            // laporan kini milik OPD yang tidak terlihat oleh pengalihnya.
+            $report->refresh();
+
+            $this->notifier->rerouted($report, $target->name);
+
+            return $report;
+        });
+    }
+
     public function startWork(Report $report, Authenticatable $actor, string $body): Report
     {
         return $this->transition($report, Report::STATUS_IN_PROGRESS, $actor, $body, function (Report $r) use ($actor) {
