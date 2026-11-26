@@ -114,7 +114,7 @@ class Report extends Model
      * memang harus dapat diperiksa lintas dinas — itu tugasnya. Pengawas SLA
      * masuk karena rekap kepatuhan mustahil dibuat dari satu OPD saja.
      */
-    protected static function privilegedRoles(): array
+    public static function privilegedRoles(): array
     {
         return ['developer', 'inspektorat', 'pengawas-sla', 'admin-kabupaten'];
     }

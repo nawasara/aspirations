@@ -199,6 +199,15 @@ Decisions worth keeping (`Support\LocationSource`):
 
 Reports are addressed by their public `code` (`LB-2026-08-0412`), never by id. Sequential ids in a URL invite guessing at other people's reports.
 
+#### `GET /api/v1/staff/aspirations/me` (behind `api.staff.identity`)
+
+Who is signed in to the panel, in one call: `sub`, `nip`, `name`, `email`, `is_petugas`, `roles`, `permissions` (only `aspirations.*`), `opd`, `scope` (`all` | `opd` | `none`), `is_verifier`, and `simas` (jabatan, jenis jabatan, jenis kepegawaian, skpd, unit, `synced_at`, or `null`).
+
+- **`api.staff.identity`, not `api.staff`.** An ASN who signs in to the panel before being proposed as an officer has no `users` row. `api.staff` answers that with a bare 403; here they get 200 with `is_petugas: false`, so the panel can tell them to ask their OPD admin.
+- **Menus come from `permissions`, not from token roles.** The panel used to read Keycloak realm roles (`KABID_ROLES`, default `kabid`) while the server checks Spatie roles (`lapor-opd-kabid`). The two could disagree with no error. This endpoint is the server's own answer.
+- **`simas` is information, never a gate.** It comes from the registry's SIMAS directory (or Keycloak attributes when fresher), which is still filling up for all ASN. Access never depends on it, so an incomplete directory cannot hold a report up. Only `ok` data is shown.
+- **Allow-list, own data only.** `StaffMeController::present()` names every field that leaves; there is no parameter, so no other employee can be read here.
+
 #### Evidence caption
 
 `POST .../{code}/evidence` accepts an optional `caption` (string, max 500), stored on the attachment and returned as `caption` by both `StaffAttachmentResource` and `AttachmentResource`. Before this, the panel already sent it and Laravel dropped the unknown field without an error: the officer saw "photo saved" and the sentence was gone.

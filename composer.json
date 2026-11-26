@@ -34,6 +34,7 @@
         "spatie/laravel-permission": "^6.0",
         "nawasara/api": "*",
         "nawasara/citizen": "*",
+        "nawasara/keycloak": "*",
         "nawasara/notification": "*",
         "nawasara/registry": "*",
         "nawasara/ui": "*",

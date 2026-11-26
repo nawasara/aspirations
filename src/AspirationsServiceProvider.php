@@ -224,6 +224,16 @@ class AspirationsServiceProvider extends ServiceProvider
             ->middleware(['api', 'api.staff'])
             ->name('nawasara-aspirations.staff.')
             ->group(__DIR__.'/../routes/staff.php');
+
+        // Satu-satunya rute staf yang TIDAK menuntut baris `users`: ASN yang
+        // login ke panel sebelum diajukan sebagai petugas harus tetap mendapat
+        // jawaban yang menjelaskan keadaannya, bukan 403 kosong. Lihat
+        // StaffMeController.
+        Route::prefix($prefix)
+            ->middleware(['api', 'api.staff.identity'])
+            ->name('nawasara-aspirations.staff.')
+            ->get('me', Http\Api\StaffMeController::class)
+            ->name('me');
     }
 
     /**
