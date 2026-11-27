@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Nawasara\Aspirations\Http\Api\StaffDashboardController;
 use Nawasara\Aspirations\Http\Api\StaffMemberRequestController;
+use Nawasara\Aspirations\Http\Api\StaffOpdEmployeeController;
 use Nawasara\Aspirations\Http\Api\StaffOpdMemberController;
 use Nawasara\Aspirations\Http\Api\StaffReportController;
 use Nawasara\Aspirations\Http\Api\StaffVerifierController;
@@ -53,6 +54,9 @@ Route::middleware(PermissionMiddleware::using('aspirations.verifier.manage'))->g
     // Ajukan petugas baru — DISETUJUI admin Registry di Nawasara, bukan di sini.
     Route::get('/opd/member-requests', [StaffMemberRequestController::class, 'index'])->name('opd.member-requests.index');
     Route::post('/opd/member-requests', [StaffMemberRequestController::class, 'store'])->name('opd.member-requests.store');
+
+    // Pegawai OPD menurut direktori SIMAS, untuk memilih siapa yang diajukan.
+    Route::get('/opd/employees', StaffOpdEmployeeController::class)->name('opd.employees.index');
 });
 
 // Ringkasan dashboard — satu permintaan, bukan 30.

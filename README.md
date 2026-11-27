@@ -199,6 +199,14 @@ Decisions worth keeping (`Support\LocationSource`):
 
 Reports are addressed by their public `code` (`LB-2026-08-0412`), never by id. Sequential ids in a URL invite guessing at other people's reports.
 
+#### `GET /api/v1/staff/aspirations/opd/employees` (needs `aspirations.verifier.manage`)
+
+Employees of the caller's own OPD according to the registry SIMAS directory, so an OPD admin can pick whom to propose (Ajukan Petugas Baru) instead of typing a NIP from memory. Fields: `nip`, `name`, `jabatan`, `jenis_jabatan`, `is_struktural`, `unit`, `officer_role` (already an officer), `pending_role` (already proposed), `synced_at`. `?q=` searches name, NIP, jabatan, unit; 25 per page, structural posts first.
+
+- **Own OPD only, fail-closed**: `MembershipResolver::opdIdFor()`; no membership means an empty list with `reason: not_linked_to_opd`.
+- **Pending is checked across all OPDs**, because `MembershipRequestService::submit` rejects a NIP pending anywhere.
+- **Jabatan helps choose, it does not decide.** Approval stays with the Registry admin, and the directory is still filling up, so people missing from it can still be proposed by typing their NIP.
+
 #### `GET /api/v1/staff/aspirations/me` (behind `api.staff.identity`)
 
 Who is signed in to the panel, in one call: `sub`, `nip`, `name`, `email`, `is_petugas`, `roles`, `permissions` (only `aspirations.*`), `opd`, `scope` (`all` | `opd` | `none`), `is_verifier`, and `simas` (jabatan, jenis jabatan, jenis kepegawaian, skpd, unit, `synced_at`, or `null`).
